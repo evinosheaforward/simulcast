@@ -179,25 +179,24 @@ const PlayerBoard: React.FC = () => {
     >
       <div className="max-w-3xl mx-auto p-4 flex min-h-screen">
         {/* Main game grid */}
-        <div className="grid grid-rows-4 gap-4 bg-black text-white p-4 min-h-screen">
+        <div className="grid grid-rows-4 gap-3 bg-black text-white p-4 min-h-screen">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-2">Rock-Paper-Scissors</h1>
             <p className="mb-4">
-              Drag and drop one card into the drop zone below. You have{" "}
+              Drag and drop one card into the drop zone below. 
+              <br/>
+              You have{" "}
               {timeRemaining} second{timeRemaining !== 1 ? "s" : ""}.
             </p>
             <button
-              className="mt-4 bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+              className="mt-1 bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
               onClick={handleSubmitCards}
             >
               Submit Cards
             </button>
           </div>
           {/* Drop Zone */}
-          <CardContainerComponent
-            id="dropzone"
-            title="Drop Zone"
-          >
+          <CardContainerComponent id="dropzone" title="Drop Zone">
             <SortableContext
               items={containers.dropzone.map((card) => card.id)}
               strategy={rectSortingStrategy}
@@ -215,10 +214,7 @@ const PlayerBoard: React.FC = () => {
           </CardContainerComponent>
 
           {/* Your Hand */}
-          <CardContainerComponent
-            id="hand"
-            title="Your Hand"
-          >
+          <CardContainerComponent id="hand" title="Your Hand">
             <SortableContext
               items={containers.hand.map((card) => card.id)}
               strategy={rectSortingStrategy}
@@ -233,7 +229,7 @@ const PlayerBoard: React.FC = () => {
 
           <div className="text-center">
             {gameOver && (
-              <div className="mt-8 p-4 bg-black text-white text-center rounded">
+              <div className="p-4 bg-black text-white text-center rounded">
                 {containers.dropzone.length > 0
                   ? `You played ${JSON.stringify(containers.dropzone.map((card) => card.content))}!`
                   : "Oops, you didn't play a card!"}

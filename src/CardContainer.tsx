@@ -21,12 +21,12 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({
 }) => {
   const { setNodeRef } = useDroppable({ id });
   return (
-    <div className="mb-6">
+    <div className="mb-2">
       <h2 className="text-xl font-bold mb-2">{title}</h2>
       <motion.div
         ref={setNodeRef}
         layout
-        className="flex space-x-2 p-2 border rounded bg-gray-100 min-h-[130px] w-full"
+        className="flex space-x-2 p-2 border rounded bg-gray-100 min-h-[140px] w-full"
       >
         {children}
       </motion.div>
