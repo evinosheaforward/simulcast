@@ -6,12 +6,10 @@ interface DropZoneProps {
 }
 
 const DropZone: React.FC<DropZoneProps> = ({ onDropCard }) => {
-  // Prevent default drag over behavior
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  // Handle drop event: retrieve the card type and notify parent
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const card = e.dataTransfer.getData("cardType") as CardType;
