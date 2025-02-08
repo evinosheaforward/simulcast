@@ -1,3 +1,4 @@
+import React from "react";
 import { useRouteError, isRouteErrorResponse } from "react-router-dom";
 
 export default function ErrorPage() {
@@ -10,7 +11,7 @@ export default function ErrorPage() {
     errorMessage = `${error.status} ${error.statusText}`;
   } else if (error instanceof Error) {
     errorMessage = error.message;
-  } 
+  }
 
   return (
     <div id="error-page">

@@ -1,37 +1,23 @@
-import React from 'react';
-import { CardType } from './Game';
+import React from "react";
+import { CardType } from "./Game";
 
 // Extend your CardProps to include x and y coordinates.
 interface CardProps {
   cardType: CardType;
-  x: number;
-  y: number;
 }
 
-const Card: React.FC<CardProps> = ({ cardType, x, y }) => {
+const Card: React.FC<CardProps> = ({ cardType }) => {
   // onDragStart: set the card type in the dataTransfer object so the drop zone can know what was dropped.
   const onDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData('cardType', cardType);
-  };
-
-  const cardStyle: React.CSSProperties = {
-    width: '80px',
-    height: '120px',
-    margin: '0.5rem',
-    border: '2px solid #333',
-    borderRadius: '8px',
-    backgroundColor: "#ff5f6d", // or any other colorful shade
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    cursor: 'grab',
-    position: 'absolute',
-    left: x,  // use the x coordinate from the entity
-    top: y,   // use the y coordinate from the entity
+    e.dataTransfer.setData("cardType", cardType);
   };
 
   return (
-    <div draggable onDragStart={onDragStart} style={cardStyle}>
+    <div
+      className="text-center w-20 h-[120px] border-2 border-[#333] rounded-lg bg-[#ff5f6d] cursor-grab"
+      draggable
+      onDragStart={onDragStart}
+    >
       {cardType.toUpperCase()}
     </div>
   );

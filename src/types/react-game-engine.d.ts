@@ -1,1 +1,1 @@
-declare module 'react-game-engine';
+declare module "react-game-engine";
