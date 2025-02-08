@@ -12,10 +12,10 @@ module.exports = [
       },
     },
     plugins: {
+      prettier: require('eslint-plugin-prettier'),
       '@typescript-eslint': require('@typescript-eslint/eslint-plugin'),
       react: require('eslint-plugin-react'),
       'react-compiler': require('eslint-plugin-react-compiler'),
-      prettier: require('eslint-plugin-prettier'),
     },
     settings: {
       react: {

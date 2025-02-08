@@ -4,7 +4,7 @@ import * as ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import "./index.css";
-import Game from "./Game";
+import PlayerBoard from "./PlayerBoard";
 import Root from "./routes/root";
 import ErrorPage from "./error-page";
 
@@ -16,7 +16,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/game",
-    element: <Game />,
+    element: <PlayerBoard />,
     errorElement: <ErrorPage />,
   },
 ]);

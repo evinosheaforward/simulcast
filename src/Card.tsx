@@ -1,34 +1,50 @@
 import React from "react";
-import { CardType } from "./Game";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { motion } from "framer-motion";
 
-// Extend your CardProps to include x and y coordinates.
-interface CardProps {
-  cardType: CardType;
-  onDropped: () => void;
+export enum CardType {
+  ROCK = "rock",
+  PAPER = "paper",
+  SCISSORS = "scissors",
 }
 
-const Card: React.FC<CardProps> = ({ cardType, onDropped }) => {
-  const onDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData("cardType", cardType);
-    e.dataTransfer.effectAllowed = "move";
-  };
-  const onDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
-    console.log(`Card ${cardType} drag ended.`);
-    if (e.dataTransfer.dropEffect === "move") {
-      onDropped();
-    }
+export type Card = {
+  id: number;
+  content: CardType;
+};
+
+interface CardComponentProps {
+  card: Card;
+  containerId: string;
+}
+
+const CardComponent: React.FC<CardComponentProps> = ({ card, containerId }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: card.id,
+      data: { containerId },
+    });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
   };
 
   return (
-    <div
-      className="text-center w-20 h-[120px] border-2 border-[#333] rounded-lg bg-[#ff5f6d] cursor-grab"
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+    <motion.div
+      ref={setNodeRef}
+      layout
+      style={style}
+      {...attributes}
+      {...listeners}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="text-center w-20 h-[120px] border-2 border-[#333] rounded-lg bg-[#ff5f6d] cursor-move"
     >
-      {cardType.toUpperCase()}
-    </div>
+      {card.content}
+    </motion.div>
   );
 };
 
-export default Card;
+export default CardComponent;
