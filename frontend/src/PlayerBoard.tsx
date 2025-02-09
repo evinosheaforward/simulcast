@@ -12,13 +12,16 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { motion, AnimatePresence } from "framer-motion";
+// import { useObservable } from "mst-react";
 
 import CardComponent, { Card, CardType } from "./Card";
 import CardContainerComponent, { CardContainer } from "./CardContainer";
+// import { gameStore } from "./GameStore";
 
 const GAME_DURATION = 10; // seconds
 
 const PlayerBoard: React.FC = () => {
+  //const data = useObservable(gameStore);
   const startingHand = Array.from({ length: 3 }, (_, i) => {
     return {
       id: i,
@@ -183,10 +186,10 @@ const PlayerBoard: React.FC = () => {
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-2">Rock-Paper-Scissors</h1>
             <p className="mb-4">
-              Drag and drop one card into the drop zone below. 
-              <br/>
-              You have{" "}
-              {timeRemaining} second{timeRemaining !== 1 ? "s" : ""}.
+              Drag and drop one card into the drop zone below.
+              <br />
+              You have {timeRemaining} second
+              {timeRemaining !== 1 ? "s" : ""}.
             </p>
             <button
               className="mt-1 bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
