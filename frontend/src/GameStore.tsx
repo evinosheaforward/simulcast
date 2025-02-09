@@ -1,5 +1,6 @@
 // GameComponent.tsx
 import { types, flow, getSnapshot } from "mobx-state-tree";
+import { io, Socket } from 'socket.io-client';
 
 // Define a Card model.
 export const Card = types.model("Card", {
@@ -120,5 +121,39 @@ export const GameStore = GameStoreUpdater.actions((self) => ({
     }
   }),
 }));
+/*
+  .actions((self) => {
+    let socket: Socket | null = null;
+
+    return {
+      // Connect to Socket.IO and join the game room.
+      connectSocket() {
+        socket = io('http://localhost:5000'); // adjust URL as needed
+        socket.emit('joinGame', self.gameId);
+
+        socket.on('gameStateUpdate', (newState: any) => {
+          console.log('Received game state update:', newState);
+          applySnapshot(self, newState);
+        });
+      },
+      disconnectSocket() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+      },
+      // Submit a move (this would call your REST PUT endpoint)
+      submitMove: flow(function* submitMove(moveData: any) {
+        const response = yield fetch(`/api/game/${self.gameId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(moveData),
+        });
+        const updatedState = yield response.json();
+        applySnapshot(self, updatedState);
+      }),
+    };
+  });
+  */
 
 export const gameStore = GameStore.create();

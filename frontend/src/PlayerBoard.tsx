@@ -172,6 +172,24 @@ const PlayerBoard: React.FC = () => {
     setGameReset((prev) => prev + 1);
     console.log(gameReset);
   };
+  /*
+    useEffect(() => {
+    // Connect to the socket when the component mounts.
+    gameStore.connectSocket();
+    return () => {
+      gameStore.disconnectSocket();
+    };
+  }, [gameStore]);
+
+  const handleSubmit = async () => {
+    // Your move data here (for example, the cards played)
+    const moveData = {
+      // ... move details,
+      gameStatus: 'submittedByThisPlayer' // The backend logic will reconcile both players' moves.
+    };
+    await gameStore.submitMove(moveData);
+  };
+  */
 
   return (
     <DndContext

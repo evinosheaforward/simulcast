@@ -24,7 +24,8 @@
     "react-dom": "^18.0.0",
     "react-game-engine": "^1.2.0",
     "react-router-dom": "^7.1.5",
-    "regenerator-runtime": "^0.14.1"
+    "regenerator-runtime": "^0.14.1",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
