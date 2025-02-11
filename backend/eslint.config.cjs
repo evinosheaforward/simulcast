@@ -16,7 +16,14 @@ module.exports = [
       '@typescript-eslint': require('@typescript-eslint/eslint-plugin'),
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'error',
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "varsIgnorePattern": "^_",
+          "argsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }
+      ],
       '@typescript-eslint/explicit-function-return-type': 'off',
       'prettier/prettier': 'error',
     },

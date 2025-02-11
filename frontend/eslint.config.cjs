@@ -23,7 +23,14 @@ module.exports = [
       },
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'error',
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "varsIgnorePattern": "^_",
+          "argsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }
+      ],
       '@typescript-eslint/explicit-function-return-type': 'off',
       'react-compiler/react-compiler': 'error',
       'prettier/prettier': 'error',

@@ -3,26 +3,20 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 
-export enum CardType {
-  ROCK = "rock",
-  PAPER = "paper",
-  SCISSORS = "scissors",
-}
-
-export type Card = {
-  id: number;
-  content: CardType;
-};
-
 interface CardComponentProps {
-  card: Card;
+  cardId: string;
+  cardContent: string;
   containerId: string;
 }
 
-const CardComponent: React.FC<CardComponentProps> = ({ card, containerId }) => {
+const CardComponent: React.FC<CardComponentProps> = ({
+  cardId,
+  cardContent,
+  containerId,
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
-      id: card.id,
+      id: cardId,
       data: { containerId },
     });
 
@@ -42,7 +36,7 @@ const CardComponent: React.FC<CardComponentProps> = ({ card, containerId }) => {
       whileTap={{ scale: 0.95 }}
       className="text-center w-20 h-[120px] border-2 border-[#333] rounded-lg bg-[#ff5f6d] cursor-move"
     >
-      {card.content}
+      {cardContent}
     </motion.div>
   );
 };

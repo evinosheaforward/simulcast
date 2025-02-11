@@ -1,38 +1,29 @@
 import express from "express";
-import router from "./routes/Game";
+import cors from "cors";
+import http from "http";
 import { Server } from "socket.io";
+import gameRoutes, { handleSocketConnection } from "./routes/Game";
 
 const app = express();
-const port = process.env.PORT || 5000;
 
-// Parse JSON bodies
+// Enable CORS for all origins
+app.use(cors());
 app.use(express.json());
 
-// Register the game API routes under /api/game
-app.use("/api/game", router);
+// Mount the game API endpoints under /api/game
+app.use("/api/game", gameRoutes);
 
-// Optionally serve your frontend (if you’re doing SSR or serving a built React app)
-// app.use(express.static("build"));
-
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" }, // Socket.IO CORS configuration
 });
 
-/*
-  useEffect(() => {
-    // Connect to the socket when the component mounts.
-    gameStore.connectSocket();
-    return () => {
-      gameStore.disconnectSocket();
-    };
-  }, [gameStore]);
+// Wire up socket connections using the game module helper
+io.on("connection", (socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+  handleSocketConnection(io, socket);
+});
 
-  const handleSubmit = async () => {
-    // Your move data here (for example, the cards played)
-    const moveData = {
-      // ... move details,
-      gameStatus: 'submittedByThisPlayer' // The backend logic will reconcile both players' moves.
-    };
-    await gameStore.submitMove(moveData);
-  };
-  */
+server.listen(5000, () => {
+  console.log("Server listening on port 5000");
+});
