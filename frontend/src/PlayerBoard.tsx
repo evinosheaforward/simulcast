@@ -3,17 +3,14 @@ import {
   DndContext,
   DragEndEvent,
   DragStartEvent,
-  DragOverlay,
   closestCenter,
 } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-import { motion, AnimatePresence } from "framer-motion";
 import { useObservable } from "mst-use-observable";
 
-import CardComponent from "./Card";
 import CardContainerComponent, { OpponentDropZone } from "./CardContainer";
 import gameStore from "./GameStore";
 import GameOptions from "./GameStart";
+import { CardDragOverlayComponent } from "./Card";
 
 const GAME_DURATION = 10; // seconds
 
@@ -154,13 +151,11 @@ const PlayerBoard: React.FC = () => {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="max-w-3xl mx-auto p-4 flex min-h-screen">
-        {/* Main game grid */}
-        <div className="grid grid-rows-5 gap-2 bg-black text-white p-4 min-h-screen">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">Rock-Paper-Scissors</h1>
-            <GameOptions />
-          </div>
+      <div className="overflow-y-auto flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-black p-2 md:p-1 sm:p-0">
+        <div className="w-full max-w-4xl bg-gray-900 rounded-lg shadow-xl p-2 md:p-1 sm:p-1 flex flex-col grid auto-rows-auto gap-1">
+          {/* Header */}
+          <GameOptions />
+
           {/* Opponent Drop Zone */}
           <OpponentDropZone
             cards={gameData.opponentDropzone.map((card) => {
@@ -169,76 +164,34 @@ const PlayerBoard: React.FC = () => {
           />
 
           {/* Drop Zone */}
-          <CardContainerComponent id="dropzone" title="Drop Zone">
-            <SortableContext
-              items={gameData.dropzone.map((card) => card.id)}
-              strategy={rectSortingStrategy}
-            >
-              <AnimatePresence>
-                {gameData.dropzone.map((card) => (
-                  <CardComponent
-                    key={card.id}
-                    cardId={card.id}
-                    cardContent={card.content}
-                    containerId="dropzone"
-                  />
-                ))}
-              </AnimatePresence>
-            </SortableContext>
-          </CardContainerComponent>
+          <CardContainerComponent id="dropzone" title="Drop Zone" />
 
           {/* Your Hand */}
-          <CardContainerComponent id="hand" title="Your Hand">
-            <SortableContext
-              items={gameData.hand.map((card) => card.id)}
-              strategy={rectSortingStrategy}
-            >
-              <AnimatePresence>
-                {gameData.hand.map((card) => (
-                  <CardComponent
-                    key={card.id}
-                    cardId={card.id}
-                    cardContent={card.content}
-                    containerId="hand"
-                  />
-                ))}
-              </AnimatePresence>
-            </SortableContext>
-          </CardContainerComponent>
-          <div>
-            <p className="mb-4">
+          <CardContainerComponent id="hand" title="Your Hand" />
+
+          <footer className="flex flex-col items-center">
+            <p className="text-sm text-gray-300 mb-1 text-center">
               Order Cards in the Drop Zone to play your cards against your
-              oppenent!
+              oppenent
               <br />
               {gameData.gameStatus == "PLAY"
                 ? `You have ${timeRemaining} second${timeRemaining !== 1 ? "s" : ""}`
-                : gameData.gameStatus == "RESOLUTION" ? "Round is being scored - see what your opponent played!" : "Waiting for you opponent!"}
+                : gameData.gameStatus == "RESOLUTION"
+                  ? "Round is being scored - see what your opponent played"
+                  : "Waiting for you opponent"}
             </p>
             <button
-              className="mt-1 bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
               onClick={handleSubmitCards}
             >
               Submit Cards
             </button>
-          </div>
+          </footer>
         </div>
-      </div>
 
-      {/* Drag overlay: Animate the overlay appearance */}
-      <DragOverlay>
-        {activeCard && (
-          <motion.div
-            layout
-            className="text-center w-20 h-[120px] border-2 border-[#333] rounded-lg bg-[#ff5f6d] shadow"
-            // Animate overlay appearance with a slight scale effect
-            initial={{ scale: 0.95, opacity: 0.8 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0.8 }}
-          >
-            {activeCard!.content}
-          </motion.div>
-        )}
-      </DragOverlay>
+        {/* Drag overlay: Animate the overlay appearance */}
+        <CardDragOverlayComponent activeCardContent={activeCard?.content} />
+      </div>
     </DndContext>
   );
 };

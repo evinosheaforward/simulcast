@@ -112,6 +112,10 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
   ) {
     const sourceItems = self.getZone(sourceZone);
     const targetItems = self.getZone(targetZone);
+    if (targetZone === "dropzone" && targetItems.length === 3) {
+      console.log("dropzone is full");
+      return;
+    }
     const sourceIndex = sourceItems.findIndex(
       (card) => card.id === activeCardId,
     );
@@ -149,6 +153,9 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
         gameId: self.gameId,
         playerId: self.playerId,
       },
+      extraHeaders: {
+        "ngrok-skip-browser-warning": "true",
+      },
     });
     self.socket.on("connect", () => {
       console.log("Connected to socket with id:", self.socket?.id);
@@ -178,11 +185,11 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
     });
     self.socket.on("roundSubmitted", (game: any) => {
       const opponent = game.players.find((p: any) => p.id !== self.playerId);
-      console.log(`roundSubmitted -- ${game}`);
+      console.log(`roundSubmitted -- ${JSON.stringify(game)}`);
       if (opponent) {
         self.setOpponentDropzone(opponent.dropzone);
       }
-      self.setGameStatus(game.gameStatus);
+      self.setGameStatus(game.state);
     });
     self.socket.on("gameUpdated", (game: any) => {
       console.log("gameUpdated", game);
@@ -201,11 +208,14 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
    * Expects the backend to return a { gameId, playerId }.
    */
   createGame: flow(function* createGame() {
-    const gameId = uuidv4();
+    const gameId = uuidv4().split("-")[0];
     try {
       const response = yield fetch(urlOf("/api/game/create"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
         body: JSON.stringify({ gameId }),
       });
       const data = yield response.json();
@@ -229,6 +239,7 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
       }).toString();
       const response = yield fetch(urlOf(`/api/game/get?${queryParams}`), {
         method: "GET",
+        headers: { "ngrok-skip-browser-warning": "true" },
       });
       const data = yield response.json();
       self.gameId = data.gameId;

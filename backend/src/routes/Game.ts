@@ -38,7 +38,7 @@ const games: Map<string, Game> = new Map();
 function drawHand(): Card[] {
   const deck = ["Rock", "Paper", "Scissors"];
   const hand: Card[] = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const card = {
       id: i.toString(),
       content: deck[Math.floor(Math.random() * deck.length)],
@@ -56,7 +56,7 @@ const router = Router();
  */
 router.post("/create", (req: Request, res: Response) => {
   const { gameId } = req.body;
-  const finalGameId = gameId || uuidv4();
+  const finalGameId = gameId || uuidv4().split("-")[0];
   const hostPlayer: Player = {
     id: uuidv4(),
     hand: [],
