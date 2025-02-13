@@ -1,11 +1,11 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useObservable } from "mst-use-observable";
-import gameStore from "./GameStore";
+import gameStore, { Card } from "./GameStore";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 
-import CardComponent, { EmptyCard } from "./Card";
+import CardComponent, { EmptyCard, CardFrameComponent } from "./Card";
 
 interface CardContainerProps {
   id: string;
@@ -38,12 +38,7 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({
             {gameData.getZone(id).length > 0 ? (
               <AnimatePresence>
                 {gameData.getZone(id).map((card) => (
-                  <CardComponent
-                    key={card.id}
-                    cardId={card.id}
-                    cardContent={card.content}
-                    containerId={id}
-                  />
+                  <CardComponent key={card.id} card={card} containerId={id} />
                 ))}
               </AnimatePresence>
             ) : (
@@ -65,16 +60,7 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({
 
 export default CardContainerComponent;
 
-interface OpponentDropZoneProps {
-  cards: {
-    id: string;
-    content: string;
-  }[];
-}
-
-export const OpponentDropZone: React.FC<OpponentDropZoneProps> = ({
-  cards,
-}) => {
+export const OpponentDropZone: React.FC<{ cards: Card[] }> = ({ cards }) => {
   return (
     <div className="mb-1">
       <section>
@@ -85,11 +71,11 @@ export const OpponentDropZone: React.FC<OpponentDropZoneProps> = ({
           {cards.map((card) => (
             <motion.div
               layout
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.75, zIndex: 1000 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-red-500 text-white cursor-move shadow-md"
+              className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#6c84f6] text-white shadow-md"
             >
-              {card.content}
+              <CardFrameComponent card={card} />
             </motion.div>
           ))}
         </div>

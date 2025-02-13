@@ -1,5 +1,11 @@
 // GameStore.ts
-import { getSnapshot, types, flow, Instance } from "mobx-state-tree";
+import {
+  getSnapshot,
+  types,
+  flow,
+  Instance,
+  SnapshotOut,
+} from "mobx-state-tree";
 import { io, Socket } from "socket.io-client";
 
 import { v4 as uuidv4 } from "uuid";
@@ -14,9 +20,12 @@ const urlOf = (endpoint: string): string => {
 export const CardModel = types.model("Card", {
   id: types.string,
   content: types.string,
+  cost: types.number,
+  speed: types.number,
 });
 
 export type Card = Instance<typeof CardModel>;
+export type CardSnapshot = SnapshotOut<typeof CardModel>;
 
 export const GameStoreBase = types
   .model("GameStore", {

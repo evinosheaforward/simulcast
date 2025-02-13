@@ -8,20 +8,18 @@ import {
 import { useObservable } from "mst-use-observable";
 
 import CardContainerComponent, { OpponentDropZone } from "./CardContainer";
-import gameStore from "./GameStore";
+import gameStore, { CardSnapshot } from "./GameStore";
 import GameOptions from "./GameStart";
 import { CardDragOverlayComponent } from "./Card";
+import { getSnapshot } from "mobx-state-tree";
 
 const GAME_DURATION = 10; // seconds
 
-type CardStruct = {
-  id: string;
-  content: string;
-} | null;
+type ActiveCard = CardSnapshot | null;
 
 const PlayerBoard: React.FC = () => {
   const gameData = useObservable(gameStore);
-  const [activeCard, setActiveCard] = useState<CardStruct>(null);
+  const [activeCard, setActiveCard] = useState<ActiveCard>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(GAME_DURATION);
 
   useEffect(() => {
@@ -88,7 +86,7 @@ const PlayerBoard: React.FC = () => {
       const card = gameData
         .getZone(containerId)
         .find((c) => c.id === active.id);
-      setActiveCard(!card ? null : { id: card.id, content: card.content });
+      setActiveCard(!card ? null : getSnapshot(card));
     },
     [gameData, activeCard, getContainer],
   );
@@ -157,11 +155,7 @@ const PlayerBoard: React.FC = () => {
           <GameOptions />
 
           {/* Opponent Drop Zone */}
-          <OpponentDropZone
-            cards={gameData.opponentDropzone.map((card) => {
-              return { id: card.id, content: card.content };
-            })}
-          />
+          <OpponentDropZone cards={gameData.opponentDropzone} />
 
           {/* Drop Zone */}
           <CardContainerComponent id="dropzone" title="Drop Zone" />
@@ -188,9 +182,8 @@ const PlayerBoard: React.FC = () => {
             </button>
           </footer>
         </div>
-
         {/* Drag overlay: Animate the overlay appearance */}
-        <CardDragOverlayComponent activeCardContent={activeCard?.content} />
+        {activeCard && <CardDragOverlayComponent card={activeCard} />}
       </div>
     </DndContext>
   );

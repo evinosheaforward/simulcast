@@ -2,6 +2,7 @@
 import { Router, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
+import Deck, { Card } from "../models/Deck";
 
 export enum GameState {
   WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",
@@ -26,26 +27,12 @@ export interface Game {
   state: GameState;
 }
 
-export interface Card {
-  id: string;
-  content: string;
-}
-
 // In-memory store for games
 const games: Map<string, Game> = new Map();
 
 /** Utility: Draw a hand (abstract implementation) */
-function drawHand(): Card[] {
-  const deck = ["Rock", "Paper", "Scissors"];
-  const hand: Card[] = [];
-  for (let i = 0; i < 5; i++) {
-    const card = {
-      id: i.toString(),
-      content: deck[Math.floor(Math.random() * deck.length)],
-    } as Card;
-    hand.push(card);
-  }
-  return hand;
+function drawHand(delta: number = 0): Card[] {
+  return getRandomElements(Deck, 4 + delta);
 }
 
 const router = Router();
@@ -226,3 +213,16 @@ function resolveRound(game: Game): void {
 }
 
 export default router;
+
+const getRandomElements = (array: any[], n: number) => {
+  if (n > array.length) return array;
+  const result = [];
+  const tempArray = [...array];
+
+  for (let i = 0; i < n; i++) {
+    const randomIndex = Math.floor(Math.random() * tempArray.length);
+    result.push(tempArray[randomIndex]);
+    tempArray.splice(randomIndex, 1); // Remove the selected element
+  }
+  return result;
+};
