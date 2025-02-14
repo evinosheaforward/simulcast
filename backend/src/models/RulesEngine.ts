@@ -65,12 +65,18 @@ class Game {
   }
 
   newRound(io: Server) {
+    // TODO need to add opponent health and mana
     this.players.forEach((p) => {
       p.submitted = false;
       p.hand = drawHand(p.cardDraw);
+      p.mana += 3;
       p.cardDraw = 0;
       p.dropzone = [];
+      [p.opponentHealth, p.opponentMana] = this.players
+        .filter((other) => other.id !== p.id)
+        .map((other) => [other.health, other.mana])[0];
     });
+
     this.state = GameState.PLAY;
     this.players.forEach((p) => {
       io.to(p.id).emit("roundStart", p);
@@ -88,6 +94,10 @@ class Game {
   }
 
   resolveRound(io: Server) {
+    this.players.forEach((player) => {
+      player.mana = 0;
+      player.cardDraw = 0;
+    });
     this.rulesEngine.resolveRound(this.players, this.goesFirst, io);
   }
 }
@@ -100,6 +110,8 @@ export interface Player {
   health: number;
   mana: number;
   cardDraw: number;
+  opponentHealth?: number;
+  opponentMana?: number;
 }
 
 class RulesEngine {

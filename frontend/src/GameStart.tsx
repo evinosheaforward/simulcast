@@ -69,9 +69,17 @@ const GameOptions: React.FC = () => {
                 </div>
                 <div>
                   <p>
-                    Score is:{" "}
-                    <span className="font-bold">{gameData.winCount}</span> to{" "}
-                    <span className="font-bold">{gameData.lossCount}</span>
+                    YOUR -- Health:{" "}
+                    <span className="font-bold">{gameData.health}</span>
+                    Mana: <span className="font-bold">{gameData.mana}</span>
+                  </p>
+                </div>
+                <div>
+                  <p>
+                    OPPONENT -- Health:{" "}
+                    <span className="font-bold">{gameData.opponentHealth}</span>
+                    Mana:{" "}
+                    <span className="font-bold">{gameData.opponentMana}</span>
                   </p>
                 </div>
               </>
@@ -79,6 +87,9 @@ const GameOptions: React.FC = () => {
               <>
                 <div>
                   <p>Not connected to a game.</p>
+                </div>
+                <div>
+                  <p></p>
                 </div>
                 <div>
                   <p></p>

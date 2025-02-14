@@ -57,6 +57,7 @@ const PlayerBoard: React.FC = () => {
     activeCardId: string,
     overId: string,
     gameData: typeof gameStore,
+    cardCost: number,
   ) => {
     console.log(`Move or Re-order card: 
       ${activeContainer} 
@@ -73,6 +74,7 @@ const PlayerBoard: React.FC = () => {
         overContainer,
         activeCardId,
         overId,
+        cardCost,
       );
     }
   };
@@ -126,6 +128,7 @@ const PlayerBoard: React.FC = () => {
         activeCard!.id,
         over!.id as string,
         gameData,
+        activeCard!.cost,
       );
       setActiveCard(null);
     },

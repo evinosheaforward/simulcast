@@ -97,7 +97,7 @@ export const CardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
       <div className="relative flex w-20 h-[120px] overflow-hidden shadow-md items-center justify-center">
         {/* Speed - Top-left */}
         <div className="absolute top-0 left-0 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
-          ⏳{card.speed}
+          ⏳{card.timer && card.speed}
         </div>
 
         {/* Name - Top-center */}

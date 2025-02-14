@@ -22,6 +22,7 @@ export const CardModel = types.model("Card", {
   content: types.string,
   cost: types.number,
   speed: types.number,
+  timer: types.number,
 });
 
 export type Card = Instance<typeof CardModel>;
@@ -35,8 +36,10 @@ export const GameStoreBase = types
     dropzone: types.optional(types.array(CardModel), []),
     opponentDropzone: types.optional(types.array(CardModel), []),
     gameStatus: types.optional(types.string, "waiting"),
-    winCount: types.optional(types.number, 0),
-    lossCount: types.optional(types.number, 0),
+    health: types.optional(types.number, -1),
+    opponentHealth: types.optional(types.number, -1),
+    mana: types.optional(types.number, -1),
+    opponentMana: types.optional(types.number, -1),
     error: types.maybe(types.string),
   })
   .volatile((_) => ({
@@ -67,14 +70,23 @@ export const GameStoreBase = types
     setOpponentDropzone(newOpponentDropzone: typeof self.opponentDropzone) {
       self.opponentDropzone.replace(newOpponentDropzone);
     },
+    clearOpponentDropzone() {
+      self.opponentDropzone.replace([]);
+    },
     setGameStatus(newStatus: string) {
       self.gameStatus = newStatus;
     },
-    setWinCount(newWinCount: number) {
-      self.winCount = newWinCount;
+    setHealth(newHealth: number) {
+      self.health = newHealth;
     },
-    setLossCount(newLossCount: number) {
-      self.lossCount = newLossCount;
+    setOpponentHealth(newHealth: number) {
+      self.opponentHealth = newHealth;
+    },
+    setMana(newMana: number) {
+      self.mana = newMana;
+    },
+    setOpponentMana(newMana: number) {
+      self.opponentMana = newMana;
     },
     setError(newError: string | undefined) {
       self.error = newError;
@@ -118,11 +130,12 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
     targetZone: string,
     activeCardId: string,
     overCardId: string,
+    cardCost: number,
   ) {
     const sourceItems = self.getZone(sourceZone);
     const targetItems = self.getZone(targetZone);
-    if (targetZone === "dropzone" && targetItems.length === 3) {
-      console.log("dropzone is full");
+    if (targetZone === "dropzone" && cardCost > self.mana) {
+      console.log("Not enough Mana");
       return;
     }
     const sourceIndex = sourceItems.findIndex(
@@ -147,6 +160,11 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
       targetItems.push(movedCard);
     } else {
       targetItems.splice(targetIndex, 0, movedCard);
+    }
+    if (targetZone === "dropzone") {
+      self.mana -= cardCost;
+    } else {
+      self.mana += cardCost;
     }
   },
 }));
@@ -173,36 +191,49 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
         playerId: self.playerId,
       });
     });
-    self.socket.on("roundStart", (game: any) => {
-      console.log("roundStart", game);
-      const player = game.players.find((p: any) => p.id === self.playerId);
+    self.socket.on("roundStart", (player: any) => {
+      console.log("roundStart", player);
       if (player) {
         self.setHand(player.hand);
         self.setDropzone(player.dropzone);
-        self.setWinCount(player.winCount);
-        self.setLossCount(player.lossCount);
+        self.setHealth(player.health);
+        self.setMana(player.mana);
+        self.setOpponentHealth(player.opponentHealth);
+        self.setOpponentMana(player.opponentMana);
       }
-      const opponent = game.players.find((p: any) => p.id !== self.playerId);
-      if (opponent) {
-        self.setOpponentDropzone(opponent.dropzone);
-      }
-      self.setGameStatus(game.state);
+      self.clearOpponentDropzone();
+      // todo refactor types to shared library
+      self.setGameStatus("PLAY");
     });
-    self.socket.on("waitingForOpponent", (game: any) => {
+    self.socket.on("waitingForOpponent", () => {
       console.log("waitingForOpponent");
-      self.setGameStatus(game.state);
+      self.setGameStatus("WAITING_FOR_SUBMISSIONS");
     });
-    self.socket.on("roundSubmitted", (game: any) => {
-      const opponent = game.players.find((p: any) => p.id !== self.playerId);
-      console.log(`roundSubmitted -- ${JSON.stringify(game)}`);
-      if (opponent) {
-        self.setOpponentDropzone(opponent.dropzone);
+    self.socket.on("roundSubmitted", (opponentDropzone: any) => {
+      console.log(`roundSubmitted -- ${JSON.stringify(opponentDropzone)}`);
+      self.setOpponentDropzone(opponentDropzone);
+      self.setGameStatus("RESOLUTION");
+    });
+    self.socket.on("resolveEvent", (updateEvent: any) => {
+      console.log("resolveEvent: ", JSON.stringify(updateEvent));
+      if (updateEvent.dropzone) {
+        for (const [playerId, dropzone] of updateEvent.dropzone) {
+          if (self.playerId == playerId) {
+            self.setDropzone(dropzone);
+          } else {
+            self.setOpponentDropzone(dropzone);
+          }
+        }
       }
-      self.setGameStatus(game.state);
-    });
-    self.socket.on("gameUpdated", (game: any) => {
-      console.log("gameUpdated", game);
-      self.setGameStatus(game.state);
+      if (updateEvent.health) {
+        for (const [playerId, newHealth] of updateEvent.health) {
+          if (self.playerId == playerId) {
+            self.setHealth(newHealth);
+          } else {
+            self.setOpponentHealth(newHealth);
+          }
+        }
+      }
     });
     self.socket.on("error", (error: any) => {
       console.log("socket error:", error.message);
