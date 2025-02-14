@@ -7,3 +7,5 @@ frontend/images/Goblet.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Helm.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Crown.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Diamond.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Counter.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Horse.png filter=lfs diff=lfs merge=lfs -text

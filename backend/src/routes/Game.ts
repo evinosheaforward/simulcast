@@ -2,38 +2,11 @@
 import { Router, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
-import Deck, { Card } from "../models/Deck";
-
-export enum GameState {
-  WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",
-  PLAY = "PLAY",
-  WAITING_FOR_SUBMISSIONS = "WAITING_FOR_SUBMISSIONS",
-  RESOLUTION = "RESOLUTION",
-}
-
-export interface Player {
-  id: string;
-  socketId?: string;
-  hand: Card[];
-  dropzone: Card[];
-  submitted: boolean;
-  winCount: number;
-  lossCount: number;
-}
-
-export interface Game {
-  id: string;
-  players: Player[];
-  state: GameState;
-}
+import { Card } from "../models/Deck";
+import Game, { GameState } from "../models/RulesEngine";
 
 // In-memory store for games
 const games: Map<string, Game> = new Map();
-
-/** Utility: Draw a hand (abstract implementation) */
-function drawHand(delta: number = 0): Card[] {
-  return getRandomElements(Deck, 4 + delta);
-}
 
 const router = Router();
 
@@ -44,21 +17,9 @@ const router = Router();
 router.post("/create", (req: Request, res: Response) => {
   const { gameId } = req.body;
   const finalGameId = gameId || uuidv4().split("-")[0];
-  const hostPlayer: Player = {
-    id: uuidv4(),
-    hand: [],
-    dropzone: [],
-    submitted: false,
-    winCount: 0,
-    lossCount: 0,
-  };
-  const newGame: Game = {
-    id: finalGameId,
-    players: [hostPlayer],
-    state: GameState.WAITING_FOR_PLAYER,
-  };
+  const newGame = new Game(finalGameId);
   games.set(finalGameId, newGame);
-  res.json({ gameId: finalGameId, playerId: hostPlayer.id });
+  res.json({ gameId: finalGameId, playerId: newGame.players[0].id });
 });
 
 /** GET /api/game/get
@@ -75,15 +36,7 @@ router.get("/get", (req: Request, res: Response) => {
     res.status(404).json({ error: "Game not found" });
     return;
   }
-  const joinPlayer: Player = {
-    id: uuidv4(),
-    hand: [],
-    dropzone: [],
-    submitted: false,
-    winCount: 0,
-    lossCount: 0,
-  };
-  game.players.push(joinPlayer);
+  const joinPlayer = game.addPlayer();
   res.json({ gameId: gameId, playerId: joinPlayer.id });
 });
 
@@ -106,14 +59,8 @@ export function handleSocketConnection(io: Server, socket: Socket) {
       }
       console.log(`player: ${playerId} joined: ${game.id}`);
       socket.join(gameId);
-      io.to(gameId).emit("waitingForOpponent", game);
-
-      if (game.players.length === 2) {
-        game.state = GameState.PLAY;
-        game.players.forEach((player) => (player.hand = drawHand()));
-        io.to(gameId).emit("roundStart", game);
-        game.state = GameState.WAITING_FOR_SUBMISSIONS;
-      }
+      socket.emit("waitingForOpponent");
+      game.startGame(io);
     },
   );
 
@@ -154,21 +101,11 @@ export function handleSocketConnection(io: Server, socket: Socket) {
         console.log(
           `Player: ${game.players[1].id} -- ${game.players[1].dropzone.toString()}`,
         );
-        io.to(gameId).emit("roundSubmitted", game);
-        console.log("start waiting 10 seconds");
-        await new Promise((resolve) => setTimeout(resolve, 10000));
-        console.log("done waiting 10 seconds");
+        game.roundSubmitted(io);
         // updates scores here as well
-        resolveRound(game);
+        game.resolveRound(io);
         // After resolution, reset submissions and deal new hands for the next round
-        game.players.forEach((p) => {
-          p.submitted = false;
-          p.hand = drawHand();
-          p.dropzone = [];
-        });
-        game.state = GameState.PLAY;
-        io.to(gameId).emit("roundStart", game);
-        game.state = GameState.WAITING_FOR_SUBMISSIONS;
+        game.newRound(io);
       } else {
         socket.emit("waitingForOpponent", game);
       }
@@ -176,53 +113,4 @@ export function handleSocketConnection(io: Server, socket: Socket) {
   );
 }
 
-function resolveRound(game: Game): void {
-  const [player1, player2] = game.players;
-  const rounds = Math.max(player1.dropzone.length, player2.dropzone.length);
-
-  for (let i = 0; i < rounds; i++) {
-    const card1 = player1.dropzone[i];
-    const card2 = player2.dropzone[i];
-
-    if (card1 && card2) {
-      if (card1.content === card2.content) {
-        continue;
-      } else if (
-        (card1.content === "Rock" && card2.content === "Scissors") ||
-        (card1.content === "Scissors" && card2.content === "Paper") ||
-        (card1.content === "Paper" && card2.content === "Rock")
-      ) {
-        // Player 1 wins.
-        player1.winCount++;
-        player2.lossCount++;
-      } else {
-        // Otherwise, player 2 wins.
-        player2.winCount++;
-        player1.lossCount++;
-      }
-    } else if (card1 && !card2) {
-      // Only player1 played a card.
-      player1.winCount++;
-      player2.lossCount++;
-    } else if (!card1 && card2) {
-      // Only player2 played a card.
-      player2.winCount++;
-      player1.lossCount++;
-    }
-  }
-}
-
 export default router;
-
-const getRandomElements = (array: any[], n: number) => {
-  if (n > array.length) return array;
-  const result = [];
-  const tempArray = [...array];
-
-  for (let i = 0; i < n; i++) {
-    const randomIndex = Math.floor(Math.random() * tempArray.length);
-    result.push(tempArray[randomIndex]);
-    tempArray.splice(randomIndex, 1); // Remove the selected element
-  }
-  return result;
-};
