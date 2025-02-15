@@ -2,7 +2,7 @@
 import { Router, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
-import { Card } from "../models/Deck";
+import { Card, populate } from "../models/Deck";
 import Game, { GameState } from "../models/RulesEngine";
 
 // In-memory store for games
@@ -57,10 +57,16 @@ export function handleSocketConnection(io: Server, socket: Socket) {
         socket.disconnect();
         return;
       }
-      console.log(`player: ${playerId} joined: ${game.id}`);
       socket.join(gameId);
-      socket.emit("waitingForOpponent");
-      game.startGame(io);
+      console.log(`player: ${playerId} joined: ${game.id}`);
+      socket.join(playerId);
+      console.log(`player: ${playerId} joined player socket`);
+
+      if (game.players.length === 2) {
+        game.startGame(io);
+      } else {
+        socket.emit("waitingForOpponent");
+      }
     },
   );
 
@@ -81,14 +87,16 @@ export function handleSocketConnection(io: Server, socket: Socket) {
       const game = games.get(gameId);
       if (!game) {
         socket.emit("error", { message: "Game not found" });
+        socket.disconnect();
         return;
       }
       const player = game.players.find((p) => p.id === playerId);
       if (!player) {
         socket.emit("error", { message: "Player not found" });
+        socket.disconnect();
         return;
       }
-      player.dropzone = dropzone;
+      player.dropzone = populate(dropzone);
       player.hand = hand;
       player.submitted = true;
 
@@ -102,8 +110,11 @@ export function handleSocketConnection(io: Server, socket: Socket) {
           `Player: ${game.players[1].id} -- ${game.players[1].dropzone.toString()}`,
         );
         game.roundSubmitted(io);
+        console.log("wait 3 sec");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        console.log("done wait 3 sec");
         // updates scores here as well
-        game.resolveRound(io);
+        await game.resolveRound(io);
         // After resolution, reset submissions and deal new hands for the next round
         game.newRound(io);
       } else {

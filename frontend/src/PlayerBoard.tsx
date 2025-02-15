@@ -13,14 +13,14 @@ import GameOptions from "./GameStart";
 import { CardDragOverlayComponent } from "./Card";
 import { getSnapshot } from "mobx-state-tree";
 
-const GAME_DURATION = 10; // seconds
+const ROUND_DURATION = 15; // seconds
 
 type ActiveCard = CardSnapshot | null;
 
 const PlayerBoard: React.FC = () => {
   const gameData = useObservable(gameStore);
   const [activeCard, setActiveCard] = useState<ActiveCard>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(GAME_DURATION);
+  const [timeRemaining, setTimeRemaining] = useState<number>(ROUND_DURATION);
 
   useEffect(() => {
     if (gameData.gameStatus != "PLAY") {
@@ -29,7 +29,7 @@ const PlayerBoard: React.FC = () => {
     if (timeRemaining <= 0) {
       setActiveCard(null);
       gameData.submitRound();
-      setTimeRemaining(10);
+      setTimeRemaining(ROUND_DURATION);
       return;
     }
     const timer = setInterval(() => {
@@ -158,11 +158,56 @@ const PlayerBoard: React.FC = () => {
           <GameOptions />
 
           {/* Opponent Drop Zone */}
+          <div className="text-center justify-center text-white">
+            <p>
+              Health:{" "}
+              <span className="font-bold">
+                {gameData.opponentHealth === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.opponentHealth}
+              </span>
+              {"    /    "}
+              Mana:{" "}
+              <span className="font-bold">
+                {gameData.opponentMana === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.opponentMana}
+              </span>
+            </p>
+          </div>
           <OpponentDropZone cards={gameData.opponentDropzone} />
 
-          {/* Drop Zone */}
-          <CardContainerComponent id="dropzone" title="Drop Zone" />
+          {/* Player Drop Zone */}
+          <div className="text-center justify-center text-white">
+            <p>
+              Health:{" "}
+              <span className="font-bold">
+                {gameData.health === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.health}
+              </span>
+              {"    /    "}
+              Mana:{" "}
+              <span className="font-bold">
+                {gameData.mana === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.mana}
+              </span>
+            </p>
+          </div>
+          <CardContainerComponent id="dropzone" title="Your Play" />
 
+          <div className="text-center justify-center text-white">
+            <p>
+              {gameData.gameOver
+                ? gameData.gameStatus === "WAITING_FOR_OPPONENT"
+                  ? "Game hasn't started"
+                  : "Game over"
+                : gameData.goesFirst
+                  ? "You go first this round"
+                  : "You opponent goes first this round"}
+            </p>
+          </div>
           {/* Your Hand */}
           <CardContainerComponent id="hand" title="Your Hand" />
 

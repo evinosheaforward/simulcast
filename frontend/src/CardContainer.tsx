@@ -65,15 +65,16 @@ export const OpponentDropZone: React.FC<{ cards: Card[] }> = ({ cards }) => {
     <div className="mb-1">
       <section>
         <h2 className="text-xl font-bold text-center text-white mb-1">
-          Opponent Drop Zone
+          Opponent's Play
         </h2>
         <div className="flex-shrink-0 flex justify-center items-center flex-wrap p-2 md:p-1 sm:p-1 border border-gray-700 rounded bg-gray-800 h-[140px] w-full shadow-sm">
           {cards.map((card) => (
             <motion.div
+              key={`opponent ${card.id}`}
               layout
               whileHover={{ scale: 1.75, zIndex: 1000 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#6c84f6] text-white shadow-md"
+              className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#D35400] text-white shadow-md"
             >
               <CardFrameComponent card={card} />
             </motion.div>

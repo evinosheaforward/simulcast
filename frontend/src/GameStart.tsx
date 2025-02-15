@@ -20,15 +20,11 @@ const GameOptions: React.FC = () => {
   return (
     <div>
       <header className="text-center">
-        <h1 className="text-4xl font-extrabold text-white mb-1">
-          Rock-Paper-Scissors
-        </h1>
+        <h1 className="text-4xl font-extrabold text-white mb-1">SimulCast</h1>
         <h2 className="text-1xl text-white mb-1">
-          Draw 5 play 3 Rock, Paper, Scissors
+          Play cards at the same time as your opponent in a game of quick moves
+          and deterministic outcomes!
           <br />
-          Each card you place will play R,P,S against your opponent
-          <br />
-          (if you don't play a card, you'll lose the point)
         </h2>
 
         <div className="items-center justify-center p-1 grid auto-rows-auto gap-1">
@@ -67,32 +63,11 @@ const GameOptions: React.FC = () => {
                     <span className="font-bold">{gameData.gameId}</span>
                   </p>
                 </div>
-                <div>
-                  <p>
-                    YOUR -- Health:{" "}
-                    <span className="font-bold">{gameData.health}</span>
-                    Mana: <span className="font-bold">{gameData.mana}</span>
-                  </p>
-                </div>
-                <div>
-                  <p>
-                    OPPONENT -- Health:{" "}
-                    <span className="font-bold">{gameData.opponentHealth}</span>
-                    Mana:{" "}
-                    <span className="font-bold">{gameData.opponentMana}</span>
-                  </p>
-                </div>
               </>
             ) : (
               <>
                 <div>
                   <p>Not connected to a game.</p>
-                </div>
-                <div>
-                  <p></p>
-                </div>
-                <div>
-                  <p></p>
                 </div>
               </>
             )}

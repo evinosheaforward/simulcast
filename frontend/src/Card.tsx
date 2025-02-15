@@ -33,7 +33,7 @@ const CardComponent: React.FC<CardComponentProps> = ({ card, containerId }) => {
       {...listeners}
       whileHover={{ scale: 1.75, zIndex: 1000 }}
       whileTap={{ scale: 0.95 }}
-      className="flex items-center justify-center text-center w-20 h-[120px] border-1 border-gray-700 rounded-lg bg-[#f49b61] text-white cursor-move shadow-md"
+      className="flex items-center justify-center text-center w-20 h-[120px] border-1 border-gray-700 rounded-lg bg-[#27AE60] text-white cursor-move shadow-md"
     >
       <CardFrameComponent card={getSnapshot(card)} />
     </motion.div>
@@ -76,7 +76,7 @@ export const CardDragOverlayComponent: React.FC<{ card: CardSnapshot }> = ({
       {card.id && card.content && (
         <motion.div
           layout
-          className="flex items-center justify-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#f49b61] text-white shadow-lg"
+          className="flex items-center justify-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#27AE60] text-white shadow-lg"
           // Animate overlay appearance with a slight scale effect
           initial={{ scale: 0.95, opacity: 0.8 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -97,7 +97,7 @@ export const CardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
       <div className="relative flex w-20 h-[120px] overflow-hidden shadow-md items-center justify-center">
         {/* Speed - Top-left */}
         <div className="absolute top-0 left-0 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
-          ⏳{card.timer && card.speed}
+          ⏳{card.timer == null ? card.speed : card.timer}
         </div>
 
         {/* Name - Top-center */}

@@ -22,8 +22,10 @@ export const CardModel = types.model("Card", {
   content: types.string,
   cost: types.number,
   speed: types.number,
-  timer: types.number,
+  timer: types.optional(types.maybeNull(types.number), null),
 });
+
+export const CardArrayModel = types.optional(types.array(CardModel), []);
 
 export type Card = Instance<typeof CardModel>;
 export type CardSnapshot = SnapshotOut<typeof CardModel>;
@@ -36,10 +38,12 @@ export const GameStoreBase = types
     dropzone: types.optional(types.array(CardModel), []),
     opponentDropzone: types.optional(types.array(CardModel), []),
     gameStatus: types.optional(types.string, "waiting"),
-    health: types.optional(types.number, -1),
-    opponentHealth: types.optional(types.number, -1),
-    mana: types.optional(types.number, -1),
-    opponentMana: types.optional(types.number, -1),
+    health: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+    opponentHealth: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+    goesFirst: types.optional(types.maybeNull(types.boolean), null),
+    mana: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+    opponentMana: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+    gameOver: types.optional(types.boolean, false),
     error: types.maybe(types.string),
   })
   .volatile((_) => ({
@@ -64,17 +68,39 @@ export const GameStoreBase = types
       console.log("new hand is:", JSON.stringify(newHand));
       self.hand = newHand;
     },
-    setDropzone(newDropzone: typeof self.dropzone) {
-      self.dropzone.replace(newDropzone);
+    setDropzone(newDropzone: typeof self.dropzone | null | undefined) {
+      console.log("set dropzone", newDropzone);
+      if (newDropzone && newDropzone.length > 0) {
+        console.log("replace");
+        self.dropzone.replace(newDropzone);
+      } else {
+        console.log("clear");
+        self.dropzone.replace([]);
+      }
     },
-    setOpponentDropzone(newOpponentDropzone: typeof self.opponentDropzone) {
-      self.opponentDropzone.replace(newOpponentDropzone);
+    clearDropzone() {
+      self.dropzone.replace([]);
+    },
+    setOpponentDropzone(
+      newOpponentDropzone: typeof self.opponentDropzone | null | undefined,
+    ) {
+      console.log("set opp dropzone", newOpponentDropzone);
+      if (newOpponentDropzone && newOpponentDropzone.length > 0) {
+        console.log("replace");
+        self.opponentDropzone.replace(newOpponentDropzone);
+      } else {
+        console.log("clear");
+        self.opponentDropzone.replace([]);
+      }
     },
     clearOpponentDropzone() {
       self.opponentDropzone.replace([]);
     },
     setGameStatus(newStatus: string) {
       self.gameStatus = newStatus;
+    },
+    setGoesFirst(goesFirst: boolean) {
+      self.goesFirst = goesFirst;
     },
     setHealth(newHealth: number) {
       self.health = newHealth;
@@ -90,6 +116,9 @@ export const GameStoreBase = types
     },
     setError(newError: string | undefined) {
       self.error = newError;
+    },
+    setGameOver(over: boolean) {
+      self.gameOver = over;
     },
     setZone(zone: string, update: typeof self.hand) {
       if (zone === "hand") {
@@ -190,6 +219,7 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
         gameId: self.gameId,
         playerId: self.playerId,
       });
+      self.setGameOver(false);
     });
     self.socket.on("roundStart", (player: any) => {
       console.log("roundStart", player);
@@ -198,6 +228,7 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
         self.setDropzone(player.dropzone);
         self.setHealth(player.health);
         self.setMana(player.mana);
+        self.setGoesFirst(player.goesFirst);
         self.setOpponentHealth(player.opponentHealth);
         self.setOpponentMana(player.opponentMana);
       }
@@ -207,7 +238,7 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
     });
     self.socket.on("waitingForOpponent", () => {
       console.log("waitingForOpponent");
-      self.setGameStatus("WAITING_FOR_SUBMISSIONS");
+      self.setGameStatus("WAITING_FOR_OPPONENT");
     });
     self.socket.on("roundSubmitted", (opponentDropzone: any) => {
       console.log(`roundSubmitted -- ${JSON.stringify(opponentDropzone)}`);
@@ -216,24 +247,45 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
     });
     self.socket.on("resolveEvent", (updateEvent: any) => {
       console.log("resolveEvent: ", JSON.stringify(updateEvent));
-      if (updateEvent.dropzone) {
-        for (const [playerId, dropzone] of updateEvent.dropzone) {
-          if (self.playerId == playerId) {
-            self.setDropzone(dropzone);
-          } else {
-            self.setOpponentDropzone(dropzone);
-          }
-        }
+      if (updateEvent.dropzone !== null) {
+        updateEvent.dropzone.forEach(
+          ([playerId, dropzoneUpdate]: [string, any]) => {
+            console.log(
+              "resolveEvent dropzone: ",
+              self.playerId,
+              playerId,
+              JSON.stringify(dropzoneUpdate),
+            );
+            if (self.playerId.trim() == playerId.trim()) {
+              self.setDropzone(dropzoneUpdate);
+            } else {
+              self.setOpponentDropzone(dropzoneUpdate);
+            }
+          },
+        );
       }
-      if (updateEvent.health) {
-        for (const [playerId, newHealth] of updateEvent.health) {
-          if (self.playerId == playerId) {
-            self.setHealth(newHealth);
-          } else {
-            self.setOpponentHealth(newHealth);
-          }
-        }
+      if (updateEvent.health !== null) {
+        updateEvent.health.forEach(
+          ([playerId, newHealth]: [string, number]) => {
+            console.log(
+              "resolveEvent health: ",
+              self.playerId,
+              playerId,
+              newHealth,
+            );
+            if (self.playerId == playerId) {
+              self.setHealth(newHealth);
+            } else {
+              self.setOpponentHealth(newHealth);
+            }
+          },
+        );
       }
+    });
+    self.socket.on("gameOver", (result: { winner: string }) => {
+      console.log("winner:", result.winner);
+      self.setGameOver(true);
+      self.socket?.disconnect();
     });
     self.socket.on("error", (error: any) => {
       console.log("socket error:", error.message);

@@ -1,31 +1,32 @@
 export enum TargetTypes {
-  HEALTH,
-  DAMAGE,
-  DRAW,
-  MANA,
-  SPELL,
+  HEALTH = "HEALTH",
+  DAMAGE = "DAMAGE",
+  DRAW = "DRAW",
+  MANA = "MANA",
+  SPELL = "SPELL",
+  EXPIRATION = "EXPIRATION",
 }
 
 export enum TargetSubTypes {
-  SPELL_SPEED,
-  SPELL_MANA,
-  PREVENTION,
+  SPELL_SPEED = "SPELL_SPEED",
+  SPELL_MANA = "SPELL_MANA",
+  PREVENTION = "PREVENTION",
 }
 
 export enum AbilityExpirations {
-  END_OF_ROUND,
-  NEXT_CARD,
+  END_OF_ROUND = "END_OF_ROUND",
+  NEXT_CARD = "NEXT_CARD",
 }
 
 export enum PlayerTargets {
-  SELF,
-  OPPONENT,
+  SELF = "SELF",
+  OPPONENT = "OPPONENT",
 }
 
 export enum Evaluation {
-  LESS,
-  EQUAL,
-  GREATER,
+  LESS = "LESS",
+  EQUAL = "EQUAL",
+  GREATER = "GREATER",
 }
 
 interface Condition {
@@ -48,7 +49,6 @@ export interface Ability {
   trigger?: {
     target?: TargetTypes;
     subtype?: TargetSubTypes;
-    value?: number | "all";
     expiresOnTrigger?: boolean;
   };
   expiration?: {
@@ -110,8 +110,11 @@ export class AbilityQueue {
     while (i < this.abilities.length) {
       currentTrigger = this.abilities[i].ability;
       owningPlayer = this.abilities[i].player;
+      console.log(
+        `expireAbilities: ${expiration.toString()} - ${JSON.stringify(currentTrigger)}`,
+      );
       if (
-        currentTrigger.expiration?.type === expiration &&
+        currentTrigger.expiration!.type === expiration &&
         evalExpiration(
           expiration,
           owningPlayer,
@@ -121,10 +124,11 @@ export class AbilityQueue {
       ) {
         currentTrigger.expiration!.numActivations -= 1;
         if (currentTrigger.expiration!.numActivations < 1) {
+          console.log("should expire ability");
           if (currentTrigger.expiration?.triggerOnExpiration) {
             triggers.push(this.abilities.splice(i, 1)[0]);
           } else {
-            triggers.push(this.abilities[i]);
+            this.abilities.splice(i, 1);
             i++;
           }
         }
@@ -132,6 +136,9 @@ export class AbilityQueue {
         i++;
       }
     }
+    console.log(
+      `Triggered on expiration: ${expiration.toString()}:\n${JSON.stringify(triggers)}`,
+    );
     return triggers;
   }
 }
@@ -169,7 +176,6 @@ export function triggerMatches(
     currentTrigger.ability.trigger?.target === card.ability.effect.target &&
     (!currentTrigger.ability.trigger?.subtype ||
       currentTrigger.ability.trigger.subtype === card.ability.effect.subtype) &&
-    // TODO need a way to pop abilities that trigger but don't meet condition
     // condition matches, if there is one
     (!currentTrigger.ability.condition ||
       evalCondition(currentTrigger.ability.condition!, card))
@@ -193,6 +199,9 @@ function evalCondition(condition: Condition, card: Card) {
           break;
       }
       break;
+    case TargetTypes.EXPIRATION:
+      target = card.ability.expiration!.numActivations;
+      break;
     default:
       target = card.ability.effect.value!;
       break;
@@ -207,6 +216,31 @@ function evalCondition(condition: Condition, card: Card) {
       return target < condition.value!;
   }
 }
+
+export function populate(cards: Card[]) {
+  return structuredClone(
+    cards.map((card) => DeckMap.get(card.id)).filter((c) => c !== undefined),
+  );
+}
+
+/** Utility: Draw a hand (abstract implementation) */
+export function drawHand(delta: number = 0): Card[] {
+  // Min CARD DRAW is 1
+  return getRandomElements(Deck, Math.max(4 + delta, 1));
+}
+
+const getRandomElements = (array: any[], n: number) => {
+  if (n > array.length) return array;
+  const result = [];
+  const tempArray = [...array];
+
+  for (let i = 0; i < n; i++) {
+    const randomIndex = Math.floor(Math.random() * tempArray.length);
+    result.push(tempArray[randomIndex]);
+    tempArray.splice(randomIndex, 1); // Remove the selected element
+  }
+  return structuredClone(result);
+};
 
 export const Deck: Card[] = [
   {
@@ -282,7 +316,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Goblet",
-    content: "Gain 3 health.",
+    content: "Gain 2 health.",
     cost: 2,
     speed: 1,
     ability: {
@@ -302,19 +336,17 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.MANA,
-        value: 3,
+        target: TargetTypes.DAMAGE,
       },
       trigger: {
         target: TargetTypes.DAMAGE,
-        value: "all",
       },
       expiration: {
         numActivations: 2,
         type: AbilityExpirations.END_OF_ROUND,
       },
       condition: {
-        target: "expiration",
+        target: TargetTypes.EXPIRATION,
         eval: Evaluation.EQUAL,
         value: 1,
       },
@@ -352,7 +384,7 @@ export const Deck: Card[] = [
     id: "Horse",
     content: "Reduce the speed of your next spell by 2",
     cost: 1,
-    speed: 2,
+    speed: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -360,6 +392,24 @@ export const Deck: Card[] = [
         subtype: TargetSubTypes.SPELL_SPEED,
         value: -2,
         immediate: true,
+      },
+    },
+  },
+  {
+    id: "Scroll",
+    content: "Your opponent loses 2 mana next turn.",
+    cost: 2,
+    speed: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        target: TargetTypes.MANA,
+        value: -2,
+      },
+      expiration: {
+        numActivations: 1,
+        type: AbilityExpirations.END_OF_ROUND,
+        triggerOnExpiration: true,
       },
     },
   },
@@ -384,5 +434,7 @@ export const Deck: Card[] = [
     },
   },
 ];
+
+export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));
 
 export default Deck;

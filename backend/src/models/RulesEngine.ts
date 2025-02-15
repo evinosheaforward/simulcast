@@ -1,9 +1,10 @@
 import { Server } from "socket.io";
-import Deck, {
+import {
   Ability,
   AbilityExpirations,
   AbilityQueue,
   Card,
+  drawHand,
   PlayerTargets,
   TargetSubTypes,
   TargetTypes,
@@ -59,22 +60,21 @@ class Game {
   }
 
   startGame(io: Server) {
-    if (this.players.length === 2) {
-      this.newRound(io);
-    }
+    console.log("starting new game");
+    this.newRound(io);
   }
 
   newRound(io: Server) {
-    // TODO need to add opponent health and mana
     this.players.forEach((p) => {
       p.submitted = false;
       p.hand = drawHand(p.cardDraw);
-      p.mana += 3;
+      p.mana = Math.max(p.mana + 3, 0);
       p.cardDraw = 0;
       p.dropzone = [];
       [p.opponentHealth, p.opponentMana] = this.players
         .filter((other) => other.id !== p.id)
         .map((other) => [other.health, other.mana])[0];
+      p.goesFirst = p.id == this.goesFirst;
     });
 
     this.state = GameState.PLAY;
@@ -93,12 +93,13 @@ class Game {
     });
   }
 
-  resolveRound(io: Server) {
+  async resolveRound(io: Server) {
     this.players.forEach((player) => {
       player.mana = 0;
       player.cardDraw = 0;
     });
-    this.rulesEngine.resolveRound(this.players, this.goesFirst, io);
+    await this.rulesEngine.resolveRound(this.players, this.goesFirst, io);
+    console.log("RESOLVE ROUND OVER");
   }
 }
 export interface Player {
@@ -112,6 +113,7 @@ export interface Player {
   cardDraw: number;
   opponentHealth?: number;
   opponentMana?: number;
+  goesFirst?: boolean;
 }
 
 class RulesEngine {
@@ -124,7 +126,7 @@ class RulesEngine {
     this.gameId = id;
   }
 
-  resolveRound(inPlayers: Player[], goesFirst: string, io: Server): void {
+  async resolveRound(inPlayers: Player[], goesFirst: string, io: Server) {
     const player1 = inPlayers.filter((player) => player.id === goesFirst)[0];
     const player2 = inPlayers.filter((player) => player.id != goesFirst)[0];
     this.players = [player1, player2];
@@ -133,31 +135,58 @@ class RulesEngine {
         card.timer = card.speed;
       });
     });
-    while (this.players.some((player) => player.dropzone.length > 0)) {
-      for (const player of this.players) {
-        this.activePlayer = player.id;
-        if (player.dropzone.length === 0) {
-          continue;
+    try {
+      while (this.players.some((p) => p.dropzone.length > 0)) {
+        for (const player of this.players) {
+          this.activePlayer = player.id;
+          if (player.dropzone.length === 0) {
+            continue;
+          }
+          // tick down remaining time
+          player.dropzone[0].timer!--;
+          while (
+            player.dropzone[0].timer != null &&
+            player.dropzone[0].timer <= 0
+          ) {
+            const card = player.dropzone.shift();
+            if (card) {
+              await this.cast(card, io);
+              await this.expireAbilities(
+                AbilityExpirations.NEXT_CARD,
+                player.id,
+                io,
+              );
+            }
+          }
         }
-        // tick down remaining time
-        player.dropzone[0].timer!--;
-        while (player.dropzone[0]?.speed) {
-          this.cast(player.dropzone.shift()!, io);
-          this.expireAbilities(AbilityExpirations.NEXT_CARD, player.id, io);
+      }
+      await this.expireAbilities(
+        AbilityExpirations.END_OF_ROUND,
+        player1.id,
+        io,
+      );
+    } catch (error) {
+      if (error instanceof PlayerDiedError) {
+        console.log(`Player died: ${error.playerId}`);
+        io.to(this.gameId).emit("gameOver", {
+          winner: this.players.filter((p) => p.id != error.playerId)[0].id,
+        });
+        io.to(this.gameId).disconnectSockets();
+        for (const playerId of this.players.map((p) => p.id)) {
+          io.to(playerId).disconnectSockets();
         }
       }
     }
-    this.expireAbilities(AbilityExpirations.END_OF_ROUND, player1.id, io);
   }
 
-  cast(card: Card, io: Server) {
-    const resolves = this.triggersAbility(card, io);
+  async cast(card: Card, io: Server) {
+    const resolves = await this.triggersAbility(card, io);
     if (resolves) {
-      this.useAbility(card.ability, io);
+      await this.useAbility(card.ability, io);
     }
   }
 
-  useAbility(
+  async useAbility(
     ability: Ability,
     io: Server,
     owningPlayer: string | null = null,
@@ -166,15 +195,11 @@ class RulesEngine {
     if (!owningPlayer) {
       owningPlayer = this.activePlayer;
     }
-    let update = new FrontEndUpdate();
-    // inefficient when ability is triggered
-    if (triggered) {
-      update.dropzone?.set(
-        owningPlayer!,
-        this.players.filter((p) => p.id === owningPlayer)[0].dropzone,
-      );
-    }
-    if (ability.effect.immediate) {
+    console.log(
+      `useAbility:\n  player: ${owningPlayer}\n  triggerd: ${triggered}\n  ability: ${JSON.stringify(ability)}`,
+    );
+    let updateEvent = new FrontEndUpdate();
+    if (ability.effect.immediate || triggered) {
       let targetPlayer: Player;
       if (ability.effect.targetPlayer === PlayerTargets.SELF) {
         targetPlayer = this.players.filter((p) => p.id === owningPlayer)[0];
@@ -183,18 +208,24 @@ class RulesEngine {
       }
       switch (ability.effect.target) {
         case TargetTypes.DAMAGE:
-          targetPlayer.health -= ability.effect.value!;
-          update.health = {
-            player: targetPlayer.id,
-            value: targetPlayer.health,
-          };
+          switch (ability.effect.subtype) {
+            case TargetSubTypes.PREVENTION:
+              if (ability.effect.value) {
+                targetPlayer.dropzone[0].ability.effect.value! -=
+                  ability.effect.value;
+              } else {
+                targetPlayer.dropzone[0].ability.effect.value! = 0;
+              }
+              break;
+            default:
+              targetPlayer.health -= ability.effect.value!;
+              updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
+              break;
+          }
           break;
         case TargetTypes.HEALTH:
           targetPlayer.health += ability.effect.value!;
-          update.health = {
-            player: targetPlayer.id,
-            value: targetPlayer.health,
-          };
+          updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
           break;
         case TargetTypes.DRAW:
           targetPlayer.cardDraw += ability.effect.value!;
@@ -203,7 +234,6 @@ class RulesEngine {
           targetPlayer.mana += ability.effect.value!;
           break;
         case TargetTypes.SPELL:
-          console.log("not implemented");
           switch (ability.effect.subtype) {
             case TargetSubTypes.PREVENTION:
               // delete the card
@@ -211,21 +241,31 @@ class RulesEngine {
               break;
             case TargetSubTypes.SPELL_SPEED:
               // reduce speed
-              targetPlayer.dropzone[0].timer! += ability.effect.value!;
+              if (targetPlayer.dropzone[0]) {
+                targetPlayer.dropzone[0].timer! += ability.effect.value!;
+              }
               break;
           }
-          update.dropzone?.set(
-            targetPlayer.id,
-            this.players.filter((p) => p.id === targetPlayer.id)[0].dropzone,
-          );
       }
     } else {
       this.abilityQueue.add(ability, owningPlayer!);
     }
-    io.to(this.gameId).emit("resolveEvent", update);
+
+    this.players.forEach((p) => {
+      updateEvent.setDropzone(p.id, p.dropzone);
+    });
+
+    console.log("resolveEvent", JSON.stringify(updateEvent.toObject()));
+    io.to(this.gameId).emit("resolveEvent", updateEvent.toObject());
+    console.log("sleep");
+    if (triggered) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
   }
 
-  triggersAbility(card: Card, io: Server) {
+  async triggersAbility(card: Card, io: Server) {
     let resolves = true;
     for (const { player, ability } of this.abilityQueue.triggeredAbilites(
       card,
@@ -238,57 +278,63 @@ class RulesEngine {
         resolves = false;
       } else {
         // resolve the triggered ability
-        this.useAbility(ability, io, player, true);
+        await this.useAbility(ability, io, player, true);
       }
     }
     return resolves;
   }
 
-  modifySpell(card: Card, ability: Ability) {
-    switch (ability.effect.subtype) {
-      case TargetSubTypes.PREVENTION:
-        return false;
-        card.timer! -= ability.effect.value!;
-        return true;
-    }
-  }
-
-  expireAbilities(expiration: AbilityExpirations, player: string, io: Server) {
+  async expireAbilities(
+    expiration: AbilityExpirations,
+    player: string,
+    io: Server,
+  ) {
+    console.log(`expireAbilities - ${expiration.toString()}`);
     const triggeredOnExpire = this.abilityQueue.expireAbilities(
       expiration,
       player,
     );
     for (const { player, ability } of triggeredOnExpire) {
-      this.useAbility(ability, io, player, true);
+      await this.useAbility(ability, io, player, true);
     }
   }
 }
 
 class FrontEndUpdate {
-  dropzone?: Map<string, Card[]>;
-  health?: {
-    value: number;
-    player: string;
-  };
+  dropzone: Map<string, Card[]> | null = null;
+  health: Map<string, number> | null = null;
+
+  setDropzone(player: string, dropzone: Card[]) {
+    if (!this.dropzone) {
+      this.dropzone = new Map<string, Card[]>();
+    }
+    this.dropzone.set(player, dropzone);
+  }
+
+  setHealth(player: string, health: number) {
+    if (!this.health) {
+      this.health = new Map<string, number>();
+    }
+    this.health.set(player, health);
+  }
+
+  toObject() {
+    return {
+      dropzone: this.dropzone != null ? [...this.dropzone] : null,
+      health: this.health != null ? [...this.health] : null,
+    };
+  }
 }
 
 export default Game;
+class PlayerDiedError extends Error {
+  public playerId: string;
 
-/** Utility: Draw a hand (abstract implementation) */
-function drawHand(delta: number = 0): Card[] {
-  // Min CARD DRAW is 1
-  return getRandomElements(Deck, Math.min(4 + delta, 1));
-}
-
-const getRandomElements = (array: any[], n: number) => {
-  if (n > array.length) return array;
-  const result = [];
-  const tempArray = [...array];
-
-  for (let i = 0; i < n; i++) {
-    const randomIndex = Math.floor(Math.random() * tempArray.length);
-    result.push(tempArray[randomIndex]);
-    tempArray.splice(randomIndex, 1); // Remove the selected element
+  constructor(playerId: string, message: string = "Player died") {
+    super(message);
+    this.playerId = playerId;
+    this.name = "PlayerDiedError";
+    // Fix the prototype chain (necessary for extending Error)
+    Object.setPrototypeOf(this, PlayerDiedError.prototype);
   }
-  return result;
-};
+}
