@@ -213,8 +213,7 @@ const PlayerBoard: React.FC = () => {
 
           <footer className="flex flex-col items-center">
             <p className="text-sm text-gray-300 mb-1 text-center">
-              Order Cards in the Drop Zone to play your cards against your
-              oppenent
+              Play your cards before the timer expires!
               <br />
               {gameData.gameStatus == "PLAY"
                 ? `You have ${timeRemaining} second${timeRemaining !== 1 ? "s" : ""}`
