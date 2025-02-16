@@ -175,7 +175,20 @@ const PlayerBoard: React.FC = () => {
               </span>
             </p>
           </div>
-          <OpponentDropZone cards={gameData.opponentDropzone} />
+          <OpponentDropZone key={gameStore.updateKey + "opponentDropzone"} />
+
+          <div className="text-center justify-center text-white">
+            <p>
+              {gameData.gameOver
+                ? !gameData.gameId ||
+                  gameData.gameStatus === "WAITING_FOR_OPPONENT"
+                  ? "Game hasn't started"
+                  : "Game over"
+                : gameData.goesFirst
+                  ? "You go first this round"
+                  : "Your opponent goes first this round"}
+            </p>
+          </div>
 
           {/* Player Drop Zone */}
           <div className="text-center justify-center text-white">
@@ -195,19 +208,12 @@ const PlayerBoard: React.FC = () => {
               </span>
             </p>
           </div>
-          <CardContainerComponent id="dropzone" title="Your Play" />
+          <CardContainerComponent
+            key={gameStore.updateKey + "dropzone"}
+            id="dropzone"
+            title="Your Play"
+          />
 
-          <div className="text-center justify-center text-white">
-            <p>
-              {gameData.gameOver
-                ? gameData.gameStatus === "WAITING_FOR_OPPONENT"
-                  ? "Game hasn't started"
-                  : "Game over"
-                : gameData.goesFirst
-                  ? "You go first this round"
-                  : "You opponent goes first this round"}
-            </p>
-          </div>
           {/* Your Hand */}
           <CardContainerComponent id="hand" title="Your Hand" />
 

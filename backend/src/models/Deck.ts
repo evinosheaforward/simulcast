@@ -101,9 +101,9 @@ const getRandomElements = (array: any[], n: number) => {
 export const Deck: Card[] = [
   {
     id: "Crown",
-    content: "Gain 3 mana next turn.",
+    content: "Gain 3 mana.",
     cost: 2,
-    speed: 2,
+    speed: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -115,8 +115,8 @@ export const Deck: Card[] = [
   },
   {
     id: "Ring",
-    content: "Gain 1 mana next turn.",
-    cost: 1,
+    content: "Gain 1 mana.",
+    cost: 0,
     speed: 1,
     ability: {
       effect: {
@@ -131,7 +131,7 @@ export const Deck: Card[] = [
     id: "Cloud",
     content: "Prevent the next damage you would take this turn.",
     cost: 1,
-    speed: 1,
+    speed: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -150,7 +150,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Diamond",
-    content: "Gain 2 mana next turn.",
+    content: "Gain 2 mana.",
     cost: 1,
     speed: 2,
     ability: {
@@ -179,7 +179,7 @@ export const Deck: Card[] = [
   {
     id: "Helm",
     content: "Gain prevent all damage next turn.",
-    cost: 2,
+    cost: 3,
     speed: 4,
     ability: {
       effect: {
@@ -230,7 +230,8 @@ export const Deck: Card[] = [
   },
   {
     id: "Horse",
-    content: "Reduce the speed of your next spell by 3",
+    content:
+      "Reduce the speed of your next spell by 3 (if that brings it to 0, it will go off right away!)",
     cost: 1,
     speed: 1,
     ability: {
@@ -245,7 +246,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Scroll",
-    content: "Your opponent loses 2 mana next turn.",
+    content: "Your opponent loses 2 mana.",
     cost: 2,
     speed: 1,
     ability: {
@@ -259,7 +260,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Counter",
-    content: "Counter the opponent's next spell",
+    content: "Counter the opponent's next spell this turn.",
     cost: 2,
     speed: 1,
     ability: {

@@ -1,7 +1,7 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useObservable } from "mst-use-observable";
-import gameStore, { Card } from "./GameStore";
+import gameStore from "./GameStore";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,11 +18,18 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({
 }) => {
   const gameData = useObservable(gameStore);
   const { setNodeRef } = useDroppable({ id });
+
   return (
     <div className="mb-1">
       <section>
         <h2 className="text-xl font-bold text-center text-white mb-1">
+          {id === "dropzone" ? "  " : ""}
           {title}
+          {id === "dropzone" &&
+          gameData.gameStatus != "PLAY" &&
+          gameData.tick === gameData.playerId
+            ? "⏳"
+            : "  "}
         </h2>
         <motion.div
           ref={setNodeRef}
@@ -38,7 +45,11 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({
             {gameData.getZone(id).length > 0 ? (
               <AnimatePresence>
                 {gameData.getZone(id).map((card) => (
-                  <CardComponent key={card.id} card={card} containerId={id} />
+                  <CardComponent
+                    key={gameData.updateKey + card.id}
+                    card={card}
+                    containerId={id}
+                  />
                 ))}
               </AnimatePresence>
             ) : (
@@ -60,15 +71,22 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({
 
 export default CardContainerComponent;
 
-export const OpponentDropZone: React.FC<{ cards: Card[] }> = ({ cards }) => {
+export const OpponentDropZone: React.FC = () => {
+  const gameData = useObservable(gameStore);
   return (
     <div className="mb-1">
       <section>
         <h2 className="text-xl font-bold text-center text-white mb-1">
+          {"  "}
           Opponent's Play
+          {gameData.gameStatus != "PLAY" &&
+          gameData.tick != null &&
+          gameData.tick !== gameData.playerId
+            ? "⏳"
+            : "  "}
         </h2>
         <div className="flex-shrink-0 flex justify-center items-center flex-wrap p-2 md:p-1 sm:p-1 border border-gray-700 rounded bg-gray-800 h-[140px] w-full shadow-sm">
-          {cards.map((card) => (
+          {gameData.opponentDropzone.map((card) => (
             <motion.div
               key={`opponent ${card.id}`}
               layout
@@ -76,7 +94,10 @@ export const OpponentDropZone: React.FC<{ cards: Card[] }> = ({ cards }) => {
               whileTap={{ scale: 0.95 }}
               className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#D35400] text-white shadow-md"
             >
-              <CardFrameComponent card={card} />
+              <CardFrameComponent
+                key={gameData.updateKey + card.id}
+                card={card}
+              />
             </motion.div>
           ))}
         </div>

@@ -5,7 +5,8 @@ import { getSnapshot } from "mobx-state-tree";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { DragOverlay } from "@dnd-kit/core";
-import { Card, CardSnapshot } from "./GameStore";
+import gameStore, { Card, CardSnapshot } from "./GameStore";
+import { useObservable } from "mst-use-observable";
 
 interface CardComponentProps {
   card: Card;
@@ -18,6 +19,7 @@ const CardComponent: React.FC<CardComponentProps> = ({ card, containerId }) => {
       id: card.id,
       data: { containerId },
     });
+  const gameData = useObservable(gameStore);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -35,7 +37,7 @@ const CardComponent: React.FC<CardComponentProps> = ({ card, containerId }) => {
       whileTap={{ scale: 0.95 }}
       className="flex items-center justify-center text-center w-20 h-[120px] border-1 border-gray-700 rounded-lg bg-[#27AE60] text-white cursor-move shadow-md"
     >
-      <CardFrameComponent card={getSnapshot(card)} />
+      <CardFrameComponent key={gameData.updateKey} card={getSnapshot(card)} />
     </motion.div>
   );
 };

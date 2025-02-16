@@ -44,7 +44,7 @@ router.get("/get", (req: Request, res: Response) => {
 export function handleSocketConnection(io: Server, socket: Socket) {
   socket.on(
     "joinGame",
-    ({ gameId, playerId }: { gameId: string; playerId: string }) => {
+    async ({ gameId, playerId }: { gameId: string; playerId: string }) => {
       const game = games.get(gameId);
       if (!game) {
         socket.emit("error", { message: "Game not found" });

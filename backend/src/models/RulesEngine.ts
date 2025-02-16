@@ -60,8 +60,9 @@ class Game {
     return joinPlayer;
   }
 
-  startGame(io: Server) {
+  async startGame(io: Server) {
     console.log("starting new game");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     this.newRound(io);
   }
 
@@ -102,13 +103,14 @@ class Game {
           .map((p) => p.cost)
           .reduce((total, num) => total + num, 0);
       if (player.mana < 0) {
-        console.log("CHEAT???");
+        console.log("CHEATER???");
         player.dropzone = [];
       }
       player.cardDraw = 0;
     });
     await this.rulesEngine.resolveRound(this.players, io);
     console.log("RESOLVE ROUND OVER");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
 export interface Player {
@@ -166,6 +168,17 @@ class RulesEngine {
           }
           // tick down remaining time
           player.dropzone[0].timer!--;
+          if (player.dropzone[0].timer! > 0) {
+            // update if all we did is tick down
+            io.to(this.gameId).emit(
+              "resolveEvent",
+              new FrontEndUpdate(
+                this.activePlayer!,
+                player.dropzone,
+              ).toObject(),
+            );
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
           while (
             player.dropzone.length !== 0 &&
             player.dropzone[0].timer != null &&
@@ -182,6 +195,15 @@ class RulesEngine {
               this.goesFirst = this.players.filter(
                 (p) => p.id != lastPlayer,
               )[0].id;
+            } else {
+              io.to(this.gameId).emit(
+                "resolveEvent",
+                new FrontEndUpdate(
+                  this.activePlayer!,
+                  player.dropzone,
+                ).toObject(),
+              );
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             }
           }
         }
@@ -227,7 +249,7 @@ class RulesEngine {
     console.log(
       `useAbility:\n  player: ${owningPlayer}\n  triggerd: ${triggered}\n  ability: ${JSON.stringify(ability)}`,
     );
-    let updateEvent = new FrontEndUpdate();
+    let updateEvent = new FrontEndUpdate(this.activePlayer!);
     if (ability.effect.immediate || triggered) {
       let targetPlayer: Player;
       if (ability.effect.targetPlayer === PlayerTargets.SELF) {
@@ -267,6 +289,7 @@ class RulesEngine {
           break;
         case TargetTypes.MANA:
           targetPlayer.mana += ability.effect.value!;
+          updateEvent.setHealth(targetPlayer.id, targetPlayer.mana);
           break;
         case TargetTypes.SPELL:
           switch (ability.effect.subtype) {
@@ -275,9 +298,12 @@ class RulesEngine {
               targetPlayer.dropzone.shift();
               break;
             case TargetSubTypes.SPELL_SPEED:
-              // reduce speed
+              // change speed
               if (targetPlayer.dropzone[0]) {
-                targetPlayer.dropzone[0].timer! += ability.effect.value!;
+                targetPlayer.dropzone[0].timer! = Math.max(
+                  targetPlayer.dropzone[0].timer! + ability.effect.value!,
+                  0,
+                );
               }
               break;
             default:
@@ -302,9 +328,9 @@ class RulesEngine {
     io.to(this.gameId).emit("resolveEvent", updateEvent.toObject());
     console.log("sleep");
     if (triggered) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } else {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     this.players.forEach((p) => {
@@ -506,6 +532,16 @@ function evalCondition(
 class FrontEndUpdate {
   dropzone: Map<string, Card[]> | null = null;
   health: Map<string, number> | null = null;
+  mana: Map<string, number> | null = null;
+  tickPlayer: string;
+  updateKey: string = uuidv4().split("-")[0];
+
+  constructor(playerId: string, dropzone: Card[] | null = null) {
+    this.tickPlayer = playerId;
+    if (dropzone) {
+      this.setDropzone(playerId, dropzone);
+    }
+  }
 
   setDropzone(player: string, dropzone: Card[]) {
     if (!this.dropzone) {
@@ -521,10 +557,19 @@ class FrontEndUpdate {
     this.health.set(player, health);
   }
 
+  setMana(player: string, mana: number) {
+    if (!this.mana) {
+      this.mana = new Map<string, number>();
+    }
+    this.mana.set(player, mana);
+  }
+
   toObject() {
     return {
       dropzone: this.dropzone != null ? [...this.dropzone] : null,
       health: this.health != null ? [...this.health] : null,
+      tick: this.tickPlayer,
+      updateKey: this.updateKey,
     };
   }
 }

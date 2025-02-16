@@ -13,3 +13,4 @@ frontend/images/Scroll.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Sword.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Axe.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Book.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Frost.png filter=lfs diff=lfs merge=lfs -text
