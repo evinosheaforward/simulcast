@@ -8,6 +8,7 @@ import {
   drawHand,
   Evaluation,
   PlayerTargets,
+  populate,
   TargetSubTypes,
   TargetTypes,
 } from "../models/Deck";
@@ -25,7 +26,6 @@ class Game {
   id: string;
   players: Player[];
   state: GameState;
-  goesFirst: string;
   rulesEngine: RulesEngine;
 
   constructor(id: string) {
@@ -41,7 +41,6 @@ class Game {
     };
     this.players = [hostPlayer];
     this.state = GameState.WAITING_FOR_PLAYER;
-    this.goesFirst = "";
     this.rulesEngine = new RulesEngine(id);
   }
 
@@ -56,7 +55,7 @@ class Game {
       cardDraw: 0,
     };
     this.players.push(joinPlayer);
-    this.goesFirst =
+    this.rulesEngine.goesFirst =
       Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
     return joinPlayer;
   }
@@ -76,7 +75,7 @@ class Game {
       [p.opponentHealth, p.opponentMana] = this.players
         .filter((other) => other.id !== p.id)
         .map((other) => [other.health, other.mana])[0];
-      p.goesFirst = p.id == this.goesFirst;
+      p.goesFirst = p.id == this.rulesEngine.goesFirst;
     });
 
     this.state = GameState.PLAY;
@@ -97,10 +96,18 @@ class Game {
 
   async resolveRound(io: Server) {
     this.players.forEach((player) => {
-      player.mana = 0;
+      player.mana =
+        player.mana -
+        player.dropzone
+          .map((p) => p.cost)
+          .reduce((total, num) => total + num, 0);
+      if (player.mana < 0) {
+        console.log("CHEAT???");
+        player.dropzone = [];
+      }
       player.cardDraw = 0;
     });
-    await this.rulesEngine.resolveRound(this.players, this.goesFirst, io);
+    await this.rulesEngine.resolveRound(this.players, io);
     console.log("RESOLVE ROUND OVER");
   }
 }
@@ -123,30 +130,44 @@ class RulesEngine {
   abilityQueue = new AbilityQueue();
   players: Player[] = [];
   activePlayer: string | null = null;
+  goesFirst: string = "";
 
   constructor(id: string) {
     this.gameId = id;
   }
 
-  async resolveRound(inPlayers: Player[], goesFirst: string, io: Server) {
-    const player1 = inPlayers.filter((player) => player.id === goesFirst)[0];
-    const player2 = inPlayers.filter((player) => player.id != goesFirst)[0];
+  async resolveRound(inPlayers: Player[], io: Server) {
+    const player1 = inPlayers.filter(
+      (player) => player.id === this.goesFirst,
+    )[0];
+    const player2 = inPlayers.filter(
+      (player) => player.id != this.goesFirst,
+    )[0];
     this.players = [player1, player2];
     this.players.forEach((player) => {
+      player.dropzone = populate(player.dropzone);
       player.dropzone.forEach((card) => {
         card.timer = card.speed;
       });
     });
     try {
+      let lastPlayer: string = player1.id;
       while (this.players.some((p) => p.dropzone.length > 0)) {
         for (const player of this.players) {
+          lastPlayer = player.id;
           this.activePlayer = player.id;
-          if (player.dropzone.length === 0) {
+          if (player.dropzone.length === 0 || player.dropzone[0] == null) {
             continue;
+          }
+
+          if (player.dropzone[0].timer == null) {
+            console.log("DROPZONE CARD TIMER == NUL");
+            player.dropzone.shift();
           }
           // tick down remaining time
           player.dropzone[0].timer!--;
           while (
+            player.dropzone.length !== 0 &&
             player.dropzone[0].timer != null &&
             player.dropzone[0].timer <= 0
           ) {
@@ -158,6 +179,9 @@ class RulesEngine {
                 player.id,
                 io,
               );
+              this.goesFirst = this.players.filter(
+                (p) => p.id != lastPlayer,
+              )[0].id;
             }
           }
         }
@@ -177,6 +201,8 @@ class RulesEngine {
         for (const playerId of this.players.map((p) => p.id)) {
           io.to(playerId).disconnectSockets();
         }
+      } else {
+        console.log("FATAL ERROR: ", error);
       }
     }
   }
@@ -220,7 +246,7 @@ class RulesEngine {
                   0,
                 );
               } else {
-                targetPlayer.dropzone[0].ability.effect.value! = 0;
+                card!.ability.effect.value! = 0;
               }
               break;
             default:
@@ -240,11 +266,7 @@ class RulesEngine {
           );
           break;
         case TargetTypes.MANA:
-          targetPlayer.mana = Math.max(
-            targetPlayer.mana + ability.effect.value!,
-            0,
-          );
-
+          targetPlayer.mana += ability.effect.value!;
           break;
         case TargetTypes.SPELL:
           switch (ability.effect.subtype) {
@@ -259,6 +281,7 @@ class RulesEngine {
               }
               break;
             default:
+              console.log("SPELL TARGET card:", JSON.stringify(card));
               card!.ability.effect.value! = Math.max(
                 card!.ability.effect.value! + ability.effect.value!,
                 0,
@@ -382,8 +405,9 @@ class AbilityQueue {
             triggers.push(this.abilities.splice(i, 1)[0]);
           } else {
             this.abilities.splice(i, 1);
-            i++;
           }
+        } else {
+          i++;
         }
       } else {
         i++;
@@ -431,15 +455,24 @@ export function triggerMatches(
       currentTrigger.ability.trigger.subtype === card.ability.effect.subtype) &&
     // condition matches, if there is one
     (!currentTrigger.ability.condition ||
-      evalCondition(currentTrigger.ability.condition!, card))
+      evalCondition(currentTrigger.ability.condition!, card, currentTrigger))
   ) {
     return true;
   }
   return false;
 }
 
-function evalCondition(condition: Condition, card: Card) {
+function evalCondition(
+  condition: Condition,
+  card: Card,
+  trigger: ActiveAbility,
+) {
   let target: number;
+  console.log(
+    "evalCondition: ",
+    JSON.stringify(card.ability),
+    JSON.stringify(trigger),
+  );
   switch (condition.target) {
     case TargetTypes.SPELL:
       switch (condition.subtype) {
@@ -453,7 +486,7 @@ function evalCondition(condition: Condition, card: Card) {
       }
       break;
     case TargetTypes.EXPIRATION:
-      target = card.ability.expiration!.numActivations;
+      target = trigger.ability.expiration!.numActivations;
       break;
     default:
       target = card.ability.effect.value!;

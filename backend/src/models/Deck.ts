@@ -138,6 +138,10 @@ export const Deck: Card[] = [
         target: TargetTypes.DAMAGE,
         subtype: TargetSubTypes.PREVENTION,
       },
+      trigger: {
+        target: TargetTypes.DAMAGE,
+        expiresOnTrigger: true,
+      },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
         numActivations: 1,
@@ -147,8 +151,8 @@ export const Deck: Card[] = [
   {
     id: "Diamond",
     content: "Gain 2 mana next turn.",
-    cost: 0,
-    speed: 3,
+    cost: 1,
+    speed: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -167,7 +171,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.HEALTH,
-        value: 3,
+        value: 2,
         immediate: true,
       },
     },
@@ -234,7 +238,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.SPELL,
         subtype: TargetSubTypes.SPELL_SPEED,
-        value: -2,
+        value: -3,
         immediate: true,
       },
     },
@@ -263,13 +267,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.OPPONENT,
         target: TargetTypes.SPELL,
         subtype: TargetSubTypes.PREVENTION,
-      },
-      trigger: {
-        target: TargetTypes.SPELL,
-      },
-      expiration: {
-        numActivations: 1,
-        type: AbilityExpirations.NEXT_CARD,
+        immediate: true,
       },
     },
   },
@@ -311,7 +309,6 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.SPELL,
         value: 2,
-        immediate: true,
       },
       trigger: {
         target: TargetTypes.DAMAGE,
