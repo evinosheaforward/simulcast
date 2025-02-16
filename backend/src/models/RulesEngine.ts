@@ -214,8 +214,11 @@ class RulesEngine {
           switch (ability.effect.subtype) {
             case TargetSubTypes.PREVENTION:
               if (ability.effect.value) {
-                targetPlayer.dropzone[0].ability.effect.value! -=
-                  ability.effect.value;
+                targetPlayer.dropzone[0].ability.effect.value! = Math.max(
+                  targetPlayer.dropzone[0].ability.effect.value! -
+                    ability.effect.value,
+                  0,
+                );
               } else {
                 targetPlayer.dropzone[0].ability.effect.value! = 0;
               }
@@ -231,10 +234,17 @@ class RulesEngine {
           updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
           break;
         case TargetTypes.DRAW:
-          targetPlayer.cardDraw += ability.effect.value!;
+          targetPlayer.cardDraw = Math.max(
+            (targetPlayer.cardDraw += ability.effect.value!),
+            0,
+          );
           break;
         case TargetTypes.MANA:
-          targetPlayer.mana += ability.effect.value!;
+          targetPlayer.mana = Math.max(
+            targetPlayer.mana + ability.effect.value!,
+            0,
+          );
+
           break;
         case TargetTypes.SPELL:
           switch (ability.effect.subtype) {
@@ -249,7 +259,11 @@ class RulesEngine {
               }
               break;
             default:
-              card!.ability.effect.value! += ability.effect.value!;
+              card!.ability.effect.value! = Math.max(
+                card!.ability.effect.value! + ability.effect.value!,
+                0,
+              );
+
               break;
           }
       }
