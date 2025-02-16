@@ -109,8 +109,16 @@ class Game {
       player.cardDraw = 0;
     });
     await this.rulesEngine.resolveRound(this.players, io);
+    const endRoundUpdate = new FrontEndUpdate(null);
+    this.players.forEach((p) => {
+      endRoundUpdate.setDropzone(p.id, p.dropzone);
+    });
     console.log("RESOLVE ROUND OVER");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    io.to(this.rulesEngine.gameId).emit(
+      "resolveEvent",
+      endRoundUpdate.toObject(),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 export interface Player {
@@ -533,13 +541,13 @@ class FrontEndUpdate {
   dropzone: Map<string, Card[]> | null = null;
   health: Map<string, number> | null = null;
   mana: Map<string, number> | null = null;
-  tickPlayer: string;
+  tickPlayer: string | null;
   updateKey: string = uuidv4().split("-")[0];
 
-  constructor(playerId: string, dropzone: Card[] | null = null) {
+  constructor(playerId: string | null, dropzone: Card[] | null = null) {
     this.tickPlayer = playerId;
     if (dropzone) {
-      this.setDropzone(playerId, dropzone);
+      this.setDropzone(playerId!, dropzone);
     }
   }
 
