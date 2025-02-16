@@ -10,3 +10,6 @@ frontend/images/Diamond.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Counter.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Horse.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Scroll.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Sword.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Axe.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Book.png filter=lfs diff=lfs merge=lfs -text

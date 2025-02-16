@@ -29,7 +29,7 @@ export enum Evaluation {
   GREATER = "GREATER",
 }
 
-interface Condition {
+export interface Condition {
   // expiration is for things like "next turn"
   target: TargetTypes | "expiration";
   subtype?: TargetSubTypes;
@@ -68,153 +68,9 @@ export type Card = {
   timer?: number;
 };
 
-interface ActiveAbility {
+export interface ActiveAbility {
   player: string;
   ability: Ability;
-}
-
-export class AbilityQueue {
-  abilities: ActiveAbility[] = [];
-
-  add(ability: Ability, player: string) {
-    this.abilities.push({ ability: ability, player: player } as ActiveAbility);
-  }
-
-  playerAbilites(player: string) {
-    return this.abilities.filter((ability) => ability.player === player);
-  }
-
-  triggeredAbilites(card: Card, activePlayer: string) {
-    let i = 0;
-    const triggers = [];
-    while (i < this.abilities.length) {
-      if (triggerMatches(card, activePlayer, this.abilities[i])) {
-        if (this.abilities[i].ability.trigger?.expiresOnTrigger) {
-          triggers.push(this.abilities.splice(i, 1)[0]);
-        } else {
-          triggers.push(this.abilities[i]);
-          i++;
-        }
-      } else {
-        i++;
-      }
-    }
-    return triggers;
-  }
-
-  expireAbilities(expiration: AbilityExpirations, activePlayer: string) {
-    let i = 0;
-    const triggers = [];
-    let currentTrigger: Ability;
-    let owningPlayer: string;
-    while (i < this.abilities.length) {
-      currentTrigger = this.abilities[i].ability;
-      owningPlayer = this.abilities[i].player;
-      console.log(
-        `expireAbilities: ${expiration.toString()} - ${JSON.stringify(currentTrigger)}`,
-      );
-      if (
-        currentTrigger.expiration!.type === expiration &&
-        evalExpiration(
-          expiration,
-          owningPlayer,
-          activePlayer,
-          currentTrigger.effect.targetPlayer,
-        )
-      ) {
-        currentTrigger.expiration!.numActivations -= 1;
-        if (currentTrigger.expiration!.numActivations < 1) {
-          console.log("should expire ability");
-          if (currentTrigger.expiration?.triggerOnExpiration) {
-            triggers.push(this.abilities.splice(i, 1)[0]);
-          } else {
-            this.abilities.splice(i, 1);
-            i++;
-          }
-        }
-      } else {
-        i++;
-      }
-    }
-    console.log(
-      `Triggered on expiration: ${expiration.toString()}:\n${JSON.stringify(triggers)}`,
-    );
-    return triggers;
-  }
-}
-
-export function evalExpiration(
-  expiration: AbilityExpirations,
-  owningPlayer: string,
-  activePlayer: string,
-  targetPlayer: PlayerTargets,
-) {
-  if (expiration !== AbilityExpirations.NEXT_CARD) {
-    return true;
-  } else if (targetPlayer === PlayerTargets.SELF) {
-    return owningPlayer == activePlayer;
-  } else if (targetPlayer === PlayerTargets.OPPONENT) {
-    return owningPlayer != activePlayer;
-  } else {
-    console.log("evalExpiration reached IMPOSSIBLE conclusion");
-    return false;
-  }
-}
-
-export function triggerMatches(
-  card: Card,
-  activePlayer: string,
-  currentTrigger: ActiveAbility,
-) {
-  if (
-    // player matches
-    ((currentTrigger.ability.effect.targetPlayer === PlayerTargets.SELF &&
-      currentTrigger.player === activePlayer) ||
-      (currentTrigger.ability.effect.targetPlayer === PlayerTargets.OPPONENT &&
-        currentTrigger.player !== activePlayer)) &&
-    // trigger matches
-    currentTrigger.ability.trigger?.target === card.ability.effect.target &&
-    (!currentTrigger.ability.trigger?.subtype ||
-      currentTrigger.ability.trigger.subtype === card.ability.effect.subtype) &&
-    // condition matches, if there is one
-    (!currentTrigger.ability.condition ||
-      evalCondition(currentTrigger.ability.condition!, card))
-  ) {
-    return true;
-  }
-  return false;
-}
-
-function evalCondition(condition: Condition, card: Card) {
-  let target: number;
-  switch (condition.target) {
-    case TargetTypes.SPELL:
-      switch (condition.subtype) {
-        case TargetSubTypes.SPELL_SPEED:
-          target = card.timer!;
-        case TargetSubTypes.SPELL_MANA:
-          target = card.cost;
-        default:
-          target = card.ability.effect.value!;
-          break;
-      }
-      break;
-    case TargetTypes.EXPIRATION:
-      target = card.ability.expiration!.numActivations;
-      break;
-    default:
-      target = card.ability.effect.value!;
-      break;
-  }
-
-  switch (condition.eval) {
-    case Evaluation.EQUAL:
-      return target === condition.value!;
-    case Evaluation.GREATER:
-      return target > condition.value!;
-    case Evaluation.LESS:
-      return target < condition.value!;
-  }
 }
 
 export function populate(cards: Card[]) {
@@ -253,11 +109,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.MANA,
         value: 3,
-      },
-      expiration: {
-        numActivations: 1,
-        type: AbilityExpirations.END_OF_ROUND,
-        triggerOnExpiration: true,
+        immediate: true,
       },
     },
   },
@@ -271,11 +123,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.MANA,
         value: 1,
-      },
-      expiration: {
-        numActivations: 1,
-        type: AbilityExpirations.END_OF_ROUND,
-        triggerOnExpiration: true,
+        immediate: true,
       },
     },
   },
@@ -306,11 +154,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.MANA,
         value: 2,
-      },
-      expiration: {
-        numActivations: 1,
-        type: AbilityExpirations.END_OF_ROUND,
-        triggerOnExpiration: true,
+        immediate: true,
       },
     },
   },
@@ -368,21 +212,21 @@ export const Deck: Card[] = [
   },
   {
     id: "Flame",
-    content: "Deal 5 damage.",
+    content: "Deal 4 damage.",
     cost: 3,
     speed: 3,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         target: TargetTypes.DAMAGE,
-        value: 5,
+        value: 4,
         immediate: true,
       },
     },
   },
   {
     id: "Horse",
-    content: "Reduce the speed of your next spell by 2",
+    content: "Reduce the speed of your next spell by 3",
     cost: 1,
     speed: 1,
     ability: {
@@ -405,11 +249,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.OPPONENT,
         target: TargetTypes.MANA,
         value: -2,
-      },
-      expiration: {
-        numActivations: 1,
-        type: AbilityExpirations.END_OF_ROUND,
-        triggerOnExpiration: true,
+        immediate: true,
       },
     },
   },
@@ -430,6 +270,56 @@ export const Deck: Card[] = [
       expiration: {
         numActivations: 1,
         type: AbilityExpirations.NEXT_CARD,
+      },
+    },
+  },
+  {
+    id: "Book",
+    content: "Draw 2 more cards next turn",
+    cost: 2,
+    speed: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        target: TargetTypes.DRAW,
+        value: 2,
+        immediate: true,
+      },
+    },
+  },
+  {
+    id: "Axe",
+    content: "Your opponent draws 1 fewer cards next turn",
+    cost: 2,
+    speed: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        target: TargetTypes.DRAW,
+        value: 1,
+        immediate: true,
+      },
+    },
+  },
+  {
+    id: "Sword",
+    content: "Add 2 damage to your next damage spell this turn",
+    cost: 1,
+    speed: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        target: TargetTypes.SPELL,
+        value: 2,
+        immediate: true,
+      },
+      trigger: {
+        target: TargetTypes.DAMAGE,
+        expiresOnTrigger: true,
+      },
+      expiration: {
+        numActivations: 1,
+        type: AbilityExpirations.END_OF_ROUND,
       },
     },
   },

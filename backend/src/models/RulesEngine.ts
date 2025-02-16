@@ -2,9 +2,11 @@ import { Server } from "socket.io";
 import {
   Ability,
   AbilityExpirations,
-  AbilityQueue,
+  ActiveAbility,
   Card,
+  Condition,
   drawHand,
+  Evaluation,
   PlayerTargets,
   TargetSubTypes,
   TargetTypes,
@@ -191,6 +193,7 @@ class RulesEngine {
     io: Server,
     owningPlayer: string | null = null,
     triggered: boolean = false,
+    card: Card | null = null,
   ) {
     if (!owningPlayer) {
       owningPlayer = this.activePlayer;
@@ -245,6 +248,9 @@ class RulesEngine {
                 targetPlayer.dropzone[0].timer! += ability.effect.value!;
               }
               break;
+            default:
+              card!.ability.effect.value! += ability.effect.value!;
+              break;
           }
       }
     } else {
@@ -263,6 +269,12 @@ class RulesEngine {
     } else {
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
+
+    this.players.forEach((p) => {
+      if (p.health <= 0) {
+        throw new PlayerDiedError(p.id);
+      }
+    });
   }
 
   async triggersAbility(card: Card, io: Server) {
@@ -278,7 +290,7 @@ class RulesEngine {
         resolves = false;
       } else {
         // resolve the triggered ability
-        await this.useAbility(ability, io, player, true);
+        await this.useAbility(ability, io, player, true, card);
       }
     }
     return resolves;
@@ -297,6 +309,150 @@ class RulesEngine {
     for (const { player, ability } of triggeredOnExpire) {
       await this.useAbility(ability, io, player, true);
     }
+  }
+}
+
+class AbilityQueue {
+  abilities: ActiveAbility[] = [];
+
+  add(ability: Ability, player: string) {
+    this.abilities.push({ ability: ability, player: player } as ActiveAbility);
+  }
+
+  playerAbilites(player: string) {
+    return this.abilities.filter((ability) => ability.player === player);
+  }
+
+  triggeredAbilites(card: Card, activePlayer: string) {
+    let i = 0;
+    const triggers = [];
+    while (i < this.abilities.length) {
+      if (triggerMatches(card, activePlayer, this.abilities[i])) {
+        if (this.abilities[i].ability.trigger?.expiresOnTrigger) {
+          triggers.push(this.abilities.splice(i, 1)[0]);
+        } else {
+          triggers.push(this.abilities[i]);
+          i++;
+        }
+      } else {
+        i++;
+      }
+    }
+    return triggers;
+  }
+
+  expireAbilities(expiration: AbilityExpirations, activePlayer: string) {
+    let i = 0;
+    const triggers = [];
+    let currentTrigger: Ability;
+    let owningPlayer: string;
+    while (i < this.abilities.length) {
+      currentTrigger = this.abilities[i].ability;
+      owningPlayer = this.abilities[i].player;
+      console.log(
+        `expireAbilities: ${expiration.toString()} - ${JSON.stringify(currentTrigger)}`,
+      );
+      if (
+        currentTrigger.expiration!.type === expiration &&
+        evalExpiration(
+          expiration,
+          owningPlayer,
+          activePlayer,
+          currentTrigger.effect.targetPlayer,
+        )
+      ) {
+        currentTrigger.expiration!.numActivations -= 1;
+        if (currentTrigger.expiration!.numActivations < 1) {
+          console.log("should expire ability");
+          if (currentTrigger.expiration?.triggerOnExpiration) {
+            triggers.push(this.abilities.splice(i, 1)[0]);
+          } else {
+            this.abilities.splice(i, 1);
+            i++;
+          }
+        }
+      } else {
+        i++;
+      }
+    }
+    console.log(
+      `Triggered on expiration: ${expiration.toString()}:\n${JSON.stringify(triggers)}`,
+    );
+    return triggers;
+  }
+}
+
+export function evalExpiration(
+  expiration: AbilityExpirations,
+  owningPlayer: string,
+  activePlayer: string,
+  targetPlayer: PlayerTargets,
+) {
+  if (expiration !== AbilityExpirations.NEXT_CARD) {
+    return true;
+  } else if (targetPlayer === PlayerTargets.SELF) {
+    return owningPlayer == activePlayer;
+  } else if (targetPlayer === PlayerTargets.OPPONENT) {
+    return owningPlayer != activePlayer;
+  } else {
+    console.log("evalExpiration reached IMPOSSIBLE conclusion");
+    return false;
+  }
+}
+
+export function triggerMatches(
+  card: Card,
+  activePlayer: string,
+  currentTrigger: ActiveAbility,
+) {
+  if (
+    // player matches
+    ((currentTrigger.ability.effect.targetPlayer === PlayerTargets.SELF &&
+      currentTrigger.player === activePlayer) ||
+      (currentTrigger.ability.effect.targetPlayer === PlayerTargets.OPPONENT &&
+        currentTrigger.player !== activePlayer)) &&
+    // trigger matches
+    currentTrigger.ability.trigger?.target === card.ability.effect.target &&
+    (!currentTrigger.ability.trigger?.subtype ||
+      currentTrigger.ability.trigger.subtype === card.ability.effect.subtype) &&
+    // condition matches, if there is one
+    (!currentTrigger.ability.condition ||
+      evalCondition(currentTrigger.ability.condition!, card))
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function evalCondition(condition: Condition, card: Card) {
+  let target: number;
+  switch (condition.target) {
+    case TargetTypes.SPELL:
+      switch (condition.subtype) {
+        case TargetSubTypes.SPELL_SPEED:
+          target = card.timer!;
+        case TargetSubTypes.SPELL_MANA:
+          target = card.cost;
+        default:
+          target = card.ability.effect.value!;
+          break;
+      }
+      break;
+    case TargetTypes.EXPIRATION:
+      target = card.ability.expiration!.numActivations;
+      break;
+    default:
+      target = card.ability.effect.value!;
+      break;
+  }
+
+  switch (condition.eval) {
+    case Evaluation.EQUAL:
+      return target === condition.value!;
+    case Evaluation.GREATER:
+      return target > condition.value!;
+    case Evaluation.LESS:
+      return target < condition.value!;
   }
 }
 
