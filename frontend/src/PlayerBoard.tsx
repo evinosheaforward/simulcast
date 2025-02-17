@@ -33,7 +33,9 @@ const PlayerBoard: React.FC = () => {
       return;
     }
     const timer = setInterval(() => {
-      setTimeRemaining((t) => t - 1);
+      if (gameData.gameStatus === "PLAY") {
+        setTimeRemaining((t) => t - 1);
+      }
     }, 1000);
     return () => clearInterval(timer);
   }, [timeRemaining, gameData]);

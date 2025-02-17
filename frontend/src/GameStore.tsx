@@ -294,9 +294,9 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
         updateEvent.mana.forEach(([playerId, newMana]: [string, number]) => {
           console.log("resolveEvent mana: ", self.playerId, playerId, newMana);
           if (self.playerId == playerId) {
-            self.setHealth(newMana);
+            self.setMana(newMana);
           } else {
-            self.setOpponentHealth(newMana);
+            self.setOpponentMana(newMana);
           }
         });
       }

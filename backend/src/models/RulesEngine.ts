@@ -160,32 +160,25 @@ class RulesEngine {
         card.timer = card.speed;
       });
     });
+    this.sendActivePlayerUpdate(player1.id, io);
     try {
       let lastPlayer: string = player1.id;
       while (this.players.some((p) => p.dropzone.length > 0)) {
         for (const player of this.players) {
           lastPlayer = player.id;
           this.activePlayer = player.id;
-          if (player.dropzone.length === 0 || player.dropzone[0] == null) {
+          if (player.dropzone.length === 0) {
+            await this.sendDropzoneUpdate(player, io);
             continue;
           }
-
-          if (player.dropzone[0].timer == null) {
-            console.log("DROPZONE CARD TIMER == NUL");
-            player.dropzone.shift();
+          if (player.dropzone[0] == null || player.dropzone[0].timer == null) {
+            throw new Error("DROPZONE CARD or TIMER == NULL?");
           }
           // tick down remaining time
           player.dropzone[0].timer!--;
           if (player.dropzone[0].timer! > 0) {
             // update if all we did is tick down
-            io.to(this.gameId).emit(
-              "resolveEvent",
-              new FrontEndUpdate(
-                this.activePlayer!,
-                player.dropzone,
-              ).toObject(),
-            );
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await this.sendDropzoneUpdate(player, io);
           }
           while (
             player.dropzone.length !== 0 &&
@@ -380,6 +373,19 @@ class RulesEngine {
     for (const { player, ability } of triggeredOnExpire) {
       await this.useAbility(ability, io, player, true);
     }
+  }
+
+  async sendDropzoneUpdate(player: Player, io: Server) {
+    io.to(this.gameId).emit(
+      "resolveEvent",
+      new FrontEndUpdate(this.activePlayer!, player.dropzone).toObject(),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  async sendActivePlayerUpdate(playerId: string, io: Server) {
+    io.to(this.gameId).emit("resolveEvent", new FrontEndUpdate(playerId));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 }
 
