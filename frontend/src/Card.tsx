@@ -63,7 +63,7 @@ export const EmptyCard: React.FC<{ container: string; text: string }> = ({
       layout
       {...listeners}
       {...attributes}
-      className="flex items-center justify-center w-full h-[120px] touch-none pointer-events-none bg-transparent shadow-md text-center text-lg text-gray-400 italic"
+      className="flex items-center justify-center w-full h-[120px] touch-none pointer-events-none bg-transparent shadow-md text-center text-lg text-gray-400 font-bold"
     >
       {text}
     </motion.div>
@@ -95,37 +95,35 @@ export const CardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
   card,
 }) => {
   return (
-    <>
-      <div className="relative flex w-20 h-[120px] overflow-hidden shadow-md items-center justify-center">
-        {/* Speed - Top-left */}
-        <div className="absolute top-0 left-0 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
-          ⏳{card.timer == null ? card.speed : card.timer}
-        </div>
-
-        {/* Name - Top-center */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-[7px] text-center font-bold bg-transparent px-1 py-0.5 rounded">
-          {card.id}
-        </div>
-
-        {/* Cost - Top-right */}
-        <div className="absolute top-0 right-0.5 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
-          🔮{card.cost}
-        </div>
-
-        {/* Card Image - Center Top */}
-        <div className="absolute top-4 w-11/12 h-5/12 flex items-center justify-center overflow-hidden">
-          <img
-            src={`/images/${card.id}.png`}
-            alt={card.content}
-            className="w-full h-full object-cover justify-center"
-          />
-        </div>
-
-        {/* Card Content - Bottom Center */}
-        <div className="absolute top-18 left-1/2 transform -translate-x-1/2 w-full text-center text-[6px] font-medium px-0.3 py-0 rounded">
-          {card.content}
-        </div>
+    <div className="select-none relative flex w-20 h-[120px] overflow-hidden shadow-md items-center justify-center">
+      {/* Time - Top-left */}
+      <div className="absolute top-0 left-0 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
+        ⏳{card.timer == null ? card.time : card.timer}
       </div>
-    </>
+
+      {/* Name - Top-center */}
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-[7px] text-center font-bold bg-transparent px-1 py-0.5 rounded">
+        {card.id}
+      </div>
+
+      {/* Cost - Top-right */}
+      <div className="absolute top-0 right-0.5 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
+        🔮{card.cost}
+      </div>
+
+      {/* Card Image - Center Top */}
+      <div className="absolute top-4 w-11/12 h-6/12 flex items-center justify-center bg-[#000000]">
+        <img
+          src={`/images/${card.id}.png`}
+          alt={card.content}
+          className="w-full h-full object-cover justify-center select-none "
+        />
+      </div>
+
+      {/* Card Content - Bottom Center */}
+      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-11/12 text-center text-[6px] font-medium px-0.3 py-0 rounded">
+        {card.content}
+      </div>
+    </div>
   );
 };

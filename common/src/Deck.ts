@@ -1,3 +1,6 @@
+export const CARDS_PER_TURN = 3;
+export const MANA_PER_TURN = 3;
+
 export enum TargetTypes {
   HEALTH = "HEALTH",
   DAMAGE = "DAMAGE",
@@ -8,7 +11,7 @@ export enum TargetTypes {
 }
 
 export enum TargetSubTypes {
-  SPELL_SPEED = "SPELL_SPEED",
+  SPELL_TIME = "SPELL_SPEED",
   SPELL_MANA = "SPELL_MANA",
   PREVENTION = "PREVENTION",
 }
@@ -63,7 +66,7 @@ export type Card = {
   id: string;
   content: string;
   cost: number;
-  speed: number;
+  time: number;
   ability: Ability;
   timer?: number;
 };
@@ -79,31 +82,12 @@ export function populate(cards: Card[]) {
   );
 }
 
-/** Utility: Draw a hand (abstract implementation) */
-export function drawHand(delta: number = 0): Card[] {
-  // Min CARD DRAW is 1
-  return getRandomElements(Deck, Math.max(4 + delta, 1));
-}
-
-const getRandomElements = (array: any[], n: number) => {
-  if (n > array.length) return array;
-  const result = [];
-  const tempArray = [...array];
-
-  for (let i = 0; i < n; i++) {
-    const randomIndex = Math.floor(Math.random() * tempArray.length);
-    result.push(tempArray[randomIndex]);
-    tempArray.splice(randomIndex, 1); // Remove the selected element
-  }
-  return structuredClone(result);
-};
-
 export const Deck: Card[] = [
   {
     id: "Crown",
     content: "Gain 3 mana.",
     cost: 2,
-    speed: 4,
+    time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -117,7 +101,7 @@ export const Deck: Card[] = [
     id: "Ring",
     content: "Gain 1 mana.",
     cost: 0,
-    speed: 1,
+    time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -131,7 +115,7 @@ export const Deck: Card[] = [
     id: "Cloud",
     content: "Prevent the next damage you would take this turn.",
     cost: 1,
-    speed: 2,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -149,10 +133,31 @@ export const Deck: Card[] = [
     },
   },
   {
+    id: "Shield",
+    content: "Reduce damage you take from each spell by 1 this turn.",
+    cost: 2,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        target: TargetTypes.DAMAGE,
+        subtype: TargetSubTypes.PREVENTION,
+        value: 1,
+      },
+      trigger: {
+        target: TargetTypes.DAMAGE,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      },
+    },
+  },
+  {
     id: "Diamond",
     content: "Gain 2 mana.",
     cost: 1,
-    speed: 2,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -166,7 +171,7 @@ export const Deck: Card[] = [
     id: "Goblet",
     content: "Gain 2 health.",
     cost: 2,
-    speed: 1,
+    time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -178,9 +183,9 @@ export const Deck: Card[] = [
   },
   {
     id: "Helm",
-    content: "Gain prevent all damage next turn.",
+    content: "Prevent all damage you would take next turn.",
     cost: 3,
-    speed: 4,
+    time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -201,44 +206,69 @@ export const Deck: Card[] = [
     },
   },
   {
+    id: "Tree",
+    content: "Gain 2 health at the end of the next two rounds.",
+    cost: 2,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        target: TargetTypes.HEALTH,
+        value: 2,
+      },
+      trigger: {
+        target: TargetTypes.EXPIRATION,
+      },
+      expiration: {
+        numActivations: 3,
+        type: AbilityExpirations.END_OF_ROUND,
+      },
+      condition: {
+        target: TargetTypes.EXPIRATION,
+        eval: Evaluation.LESS,
+        value: 3,
+      },
+    },
+  },
+  {
     id: "Spark",
-    content: "Deal 2 damage.",
+    content: "Deal 1 damage.",
     cost: 1,
-    speed: 1,
+    time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         target: TargetTypes.DAMAGE,
-        value: 2,
+        value: 1,
         immediate: true,
       },
     },
   },
   {
     id: "Flame",
-    content: "Deal 4 damage.",
+    content: "Deal 3 damage.",
     cost: 3,
-    speed: 3,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         target: TargetTypes.DAMAGE,
-        value: 4,
+        value: 3,
         immediate: true,
       },
     },
   },
   {
-    id: "Horse",
+    id: "Steed",
     content:
-      "Reduce the speed of your next spell by 3 (if that brings it to 0, it will go off right away!)",
+      "Reduce the time of your next spell by 3",
     cost: 1,
-    speed: 1,
+    time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_SPEED,
+        subtype: TargetSubTypes.SPELL_TIME,
         value: -3,
         immediate: true,
       },
@@ -248,7 +278,7 @@ export const Deck: Card[] = [
     id: "Scroll",
     content: "Your opponent loses 2 mana.",
     cost: 2,
-    speed: 1,
+    time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -262,7 +292,7 @@ export const Deck: Card[] = [
     id: "Counter",
     content: "Counter the opponent's next spell this turn.",
     cost: 2,
-    speed: 1,
+    time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -276,7 +306,7 @@ export const Deck: Card[] = [
     id: "Book",
     content: "Draw 2 more cards next turn",
     cost: 2,
-    speed: 2,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -286,11 +316,25 @@ export const Deck: Card[] = [
       },
     },
   },
+{
+    id: "Quill",
+    content: "Draw 1 more cards next turn",
+    cost: 2,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        target: TargetTypes.DRAW,
+        value: 1,
+        immediate: true,
+      },
+    },
+  },
   {
     id: "Axe",
     content: "Your opponent draws 1 fewer cards next turn",
     cost: 2,
-    speed: 2,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -304,7 +348,7 @@ export const Deck: Card[] = [
     id: "Sword",
     content: "Add 2 damage to your next damage spell this turn",
     cost: 1,
-    speed: 2,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -321,8 +365,37 @@ export const Deck: Card[] = [
       },
     },
   },
+  {
+    id: "Inferno",
+    content: "Deal 6 damage",
+    cost: 6,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        target: TargetTypes.DAMAGE,
+        value: 6,
+        immediate: true,
+      },
+    },
+  },
+  {
+    id: "Frost",
+    content: "Deal 3 damage.",
+    cost: 1,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        target: TargetTypes.DAMAGE,
+        value: 3,
+        immediate: true,
+      },
+    },
+  },
 ];
 
 export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));
-
-export default Deck;
+export function NewDeck() {
+  return [...Deck.map((c) => c.id)];
+}

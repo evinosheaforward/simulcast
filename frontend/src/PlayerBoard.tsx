@@ -12,8 +12,10 @@ import gameStore, { CardSnapshot } from "./GameStore";
 import GameOptions from "./GameStart";
 import { CardDragOverlayComponent } from "./Card";
 import { getSnapshot } from "mobx-state-tree";
+import { Notification } from "./Utilities";
+import PageFrame from "./PageFrame";
 
-const ROUND_DURATION = 15; // seconds
+export const ROUND_DURATION = 15; // seconds
 
 type ActiveCard = CardSnapshot | null;
 
@@ -21,6 +23,27 @@ const PlayerBoard: React.FC = () => {
   const gameData = useObservable(gameStore);
   const [activeCard, setActiveCard] = useState<ActiveCard>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(ROUND_DURATION);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationText, setNotificationText] = useState("");
+
+  useEffect(() => {
+    if (gameData.gameId) {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [gameData.gameId]); // or any observable value that triggers a re-render
+
+  const triggerNotification = (notification: string) => {
+    setNotificationText(notification);
+    setShowNotification(true);
+  };
+
+  const handleCloseNotification = useCallback(
+    () => setShowNotification(false),
+    [],
+  );
 
   useEffect(() => {
     if (gameData.gameStatus != "PLAY") {
@@ -71,6 +94,11 @@ const PlayerBoard: React.FC = () => {
     if (activeContainer === overContainer) {
       gameData.reorderCardWithinZone(activeContainer, activeCardId, overId);
     } else {
+      if (overContainer === "dropzone" && cardCost > gameData.mana) {
+        console.log("Not enough Mana");
+        triggerNotification("Not enough Mana!");
+        return;
+      }
       gameData.moveCardBetweenZones(
         activeContainer,
         overContainer,
@@ -144,103 +172,124 @@ const PlayerBoard: React.FC = () => {
   const handleSubmitCards = () => {
     setActiveCard(null);
     gameData.submitRound();
-    setTimeRemaining(10);
+    setTimeRemaining(ROUND_DURATION);
   };
 
   return (
-    <DndContext
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-    >
-      <div className="overflow-y-auto flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-black p-2 md:p-1 sm:p-0">
-        <div className="w-full max-w-4xl bg-gray-900 rounded-lg shadow-xl p-2 md:p-1 sm:p-1 flex flex-col grid auto-rows-auto gap-1">
-          {/* Header */}
-          <GameOptions />
+    <PageFrame>
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        {/* Header */}
+        <GameOptions />
 
-          {/* Opponent Drop Zone */}
-          <div className="text-center justify-center text-white">
-            <p>
-              Health:{" "}
-              <span className="font-bold">
-                {gameData.opponentHealth === Number.MIN_SAFE_INTEGER
-                  ? " "
-                  : gameData.opponentHealth}
-              </span>
-              {"    /    "}
-              Mana:{" "}
-              <span className="font-bold">
-                {gameData.opponentMana === Number.MIN_SAFE_INTEGER
-                  ? " "
-                  : gameData.opponentMana}
-              </span>
-            </p>
-          </div>
-          <OpponentDropZone key={gameStore.updateKey + "opponentDropzone"} />
+        {/* Opponent Drop Zone */}
+        <div className="text-center justify-center text-white">
+          <p>
+            {gameData.gameStatus != "PLAY" &&
+            gameData.tick != null &&
+            gameData.tick !== gameData.playerId
+              ? "⏳"
+              : "  "}{" "}
+            Health:{" "}
+            <span className="font-bold">
+              {gameData.opponentHealth === Number.MIN_SAFE_INTEGER
+                ? " "
+                : gameData.opponentHealth}
+            </span>
+            {"    /    "}
+            Mana:{" "}
+            <span className="font-bold">
+              {gameData.opponentMana === Number.MIN_SAFE_INTEGER
+                ? " "
+                : gameData.opponentMana}
+            </span>
+          </p>
+        </div>
+        <OpponentDropZone key={gameStore.updateKey + "opponentDropzone"} />
 
-          <div className="text-center justify-center text-white">
-            <p>
-              {gameData.gameOver
-                ? !gameData.gameId ||
-                  gameData.gameStatus === "WAITING_FOR_OPPONENT"
-                  ? "Game hasn't started"
-                  : "Game over"
-                : gameData.goesFirst
-                  ? "You go first this round"
-                  : "Your opponent goes first this round"}
-            </p>
-          </div>
+        <div className="text-center justify-center text-white">
+          <p className="mb-2 font-bold">
+            {gameData.gameOver
+              ? !gameData.gameId ||
+                gameData.gameStatus === "WAITING_FOR_OPPONENT"
+                ? "Game hasn't started"
+                : "Game over"
+              : gameData.goesFirst
+                ? "You go first this round"
+                : "Your opponent goes first this round"}
+          </p>
+        </div>
 
-          {/* Player Drop Zone */}
-          <div className="text-center justify-center text-white">
-            <p>
-              Health:{" "}
-              <span className="font-bold">
-                {gameData.health === Number.MIN_SAFE_INTEGER
-                  ? " "
-                  : gameData.health}
-              </span>
-              {"    /    "}
-              Mana:{" "}
-              <span className="font-bold">
-                {gameData.mana === Number.MIN_SAFE_INTEGER
-                  ? " "
-                  : gameData.mana}
-              </span>
-            </p>
-          </div>
-          <CardContainerComponent
-            key={gameStore.updateKey + "dropzone"}
-            id="dropzone"
-            title="Your Play"
-          />
+        {/* Player Drop Zone */}
+        <div className="text-center justify-center text-white">
+          <p id="playerDropzoneText">
+            {gameData.gameStatus != "PLAY" &&
+            gameData.tick === gameData.playerId
+              ? "⏳"
+              : "  "}{" "}
+            Health:{" "}
+            <span className="font-bold">
+              {gameData.health === Number.MIN_SAFE_INTEGER
+                ? " "
+                : gameData.health}
+            </span>
+            {"    /    "}
+            Mana:{" "}
+            <span className="font-bold">
+              {gameData.mana === Number.MIN_SAFE_INTEGER ? " " : gameData.mana}
+            </span>
+          </p>
+        </div>
 
-          {/* Your Hand */}
-          <CardContainerComponent id="hand" title="Your Hand" />
+        {/* Not enough Mana overlay */}
+        <div>
+          {showNotification && (
+            <Notification
+              message={notificationText}
+              onClose={handleCloseNotification}
+              duration={2000} // Displays for 2 seconds
+            />
+          )}
+        </div>
 
-          <footer className="flex flex-col items-center">
-            <p className="text-sm text-gray-300 mb-1 text-center">
-              Play your cards before the timer expires!
-              <br />
-              {gameData.gameStatus == "PLAY"
-                ? `You have ${timeRemaining} second${timeRemaining !== 1 ? "s" : ""}`
-                : gameData.gameStatus == "RESOLUTION"
-                  ? "Round is being scored - see what your opponent played"
-                  : "Waiting for you opponent"}
-            </p>
+        <CardContainerComponent
+          key={gameStore.updateKey + "dropzone"}
+          id="dropzone"
+        />
+
+        <div className="w-full items-center">
+          {gameData.gameStatus == "PLAY" ? (
             <button
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-101"
               onClick={handleSubmitCards}
             >
-              Submit Cards
+              Submit Early - You have {timeRemaining} second
+              {timeRemaining !== 1 ? "s" : ""}
             </button>
-          </footer>
+          ) : (
+            <button
+              className="w-full bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md"
+              onClick={handleSubmitCards}
+            >
+              {gameData.gameOver
+                ? "Game Over"
+                : gameData.gameStatus == "RESOLUTION"
+                  ? "Round is resolving"
+                  : "Waiting for your opponent"}
+            </button>
+          )}
         </div>
+
+        {/* Your Hand */}
+        <CardContainerComponent id="hand" />
         {/* Drag overlay: Animate the overlay appearance */}
         {activeCard && <CardDragOverlayComponent card={activeCard} />}
-      </div>
-    </DndContext>
+      </DndContext>
+    </PageFrame>
   );
 };
 

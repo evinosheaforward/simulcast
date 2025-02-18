@@ -5,13 +5,16 @@ import {
   ActiveAbility,
   Card,
   Condition,
-  drawHand,
+  DeckMap,
   Evaluation,
+  NewDeck,
   PlayerTargets,
   populate,
   TargetSubTypes,
   TargetTypes,
-} from "../models/Deck";
+  CARDS_PER_TURN,
+  MANA_PER_TURN,
+} from "simulcast-common";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -27,6 +30,7 @@ class Game {
   players: Player[];
   state: GameState;
   rulesEngine: RulesEngine;
+  decks = new Map<string, string[]>();
 
   constructor(id: string) {
     this.id = id;
@@ -62,15 +66,18 @@ class Game {
 
   async startGame(io: Server) {
     console.log("starting new game");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    this.players.forEach((p) => {
+      this.decks.set(p.id, NewDeck());
+    });
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     this.newRound(io);
   }
 
   newRound(io: Server) {
     this.players.forEach((p) => {
       p.submitted = false;
-      p.hand = drawHand(p.cardDraw);
-      p.mana = Math.max(p.mana + 3, 0);
+      p.hand = this.drawHand(p.cardDraw, p.id, p.hand);
+      p.mana = Math.max(p.mana + MANA_PER_TURN, 0);
       p.cardDraw = 0;
       p.dropzone = [];
       [p.opponentHealth, p.opponentMana] = this.players
@@ -120,6 +127,27 @@ class Game {
     );
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
+
+  /** Utility: Draw a hand (abstract implementation) */
+  drawHand(delta: number = 0, playerId: string, currentHand: Card[]): Card[] {
+    // HOW DOES CARD DRAW WORK?
+    const drawCount = Math.max(
+      delta + Math.max(CARDS_PER_TURN - currentHand.length, 0),
+      0,
+    );
+    let array = this.decks.get(playerId)!;
+    const result = [...currentHand.map((c) => c.id)];
+
+    for (let i = 0; i < drawCount; i++) {
+      if (array.length === 0) {
+        this.decks.set(playerId, NewDeck());
+        array = this.decks.get(playerId)!;
+      }
+      const randomIndex = Math.floor(Math.random() * array.length);
+      result.push(array.splice(randomIndex, 1)[0]); // Remove the selected element
+    }
+    return structuredClone(result.map((cardId) => DeckMap.get(cardId)!));
+  }
 }
 export interface Player {
   id: string;
@@ -157,7 +185,7 @@ class RulesEngine {
     this.players.forEach((player) => {
       player.dropzone = populate(player.dropzone);
       player.dropzone.forEach((card) => {
-        card.timer = card.speed;
+        card.timer = card.time;
       });
     });
     this.sendActivePlayerUpdate(player1.id, io);
@@ -290,7 +318,7 @@ class RulesEngine {
           break;
         case TargetTypes.MANA:
           targetPlayer.mana += ability.effect.value!;
-          updateEvent.setHealth(targetPlayer.id, targetPlayer.mana);
+          updateEvent.setMana(targetPlayer.id, targetPlayer.mana);
           break;
         case TargetTypes.SPELL:
           switch (ability.effect.subtype) {
@@ -298,8 +326,8 @@ class RulesEngine {
               // delete the card
               targetPlayer.dropzone.shift();
               break;
-            case TargetSubTypes.SPELL_SPEED:
-              // change speed
+            case TargetSubTypes.SPELL_TIME:
+              // change time
               if (targetPlayer.dropzone[0]) {
                 targetPlayer.dropzone[0].timer! = Math.max(
                   targetPlayer.dropzone[0].timer! + ability.effect.value!,
@@ -439,7 +467,11 @@ class AbilityQueue {
         )
       ) {
         currentTrigger.expiration!.numActivations -= 1;
-        if (currentTrigger.expiration!.numActivations < 1) {
+        if (
+          currentTrigger.expiration!.numActivations < 1 ||
+          (currentTrigger.trigger?.target === TargetTypes.EXPIRATION &&
+            evalCondition(currentTrigger.condition!, currentTrigger))
+        ) {
           console.log("should expire ability");
           if (currentTrigger.expiration?.triggerOnExpiration) {
             triggers.push(this.abilities.splice(i, 1)[0]);
@@ -495,7 +527,11 @@ export function triggerMatches(
       currentTrigger.ability.trigger.subtype === card.ability.effect.subtype) &&
     // condition matches, if there is one
     (!currentTrigger.ability.condition ||
-      evalCondition(currentTrigger.ability.condition!, card, currentTrigger))
+      evalCondition(
+        currentTrigger.ability.condition!,
+        currentTrigger.ability,
+        card,
+      ))
   ) {
     return true;
   }
@@ -504,32 +540,32 @@ export function triggerMatches(
 
 function evalCondition(
   condition: Condition,
-  card: Card,
-  trigger: ActiveAbility,
+  trigger: Ability,
+  card: Card | null = null,
 ) {
   let target: number;
   console.log(
     "evalCondition: ",
-    JSON.stringify(card.ability),
+    JSON.stringify(card?.ability),
     JSON.stringify(trigger),
   );
   switch (condition.target) {
     case TargetTypes.SPELL:
       switch (condition.subtype) {
-        case TargetSubTypes.SPELL_SPEED:
-          target = card.timer!;
+        case TargetSubTypes.SPELL_TIME:
+          target = card!.timer!;
         case TargetSubTypes.SPELL_MANA:
-          target = card.cost;
+          target = card!.cost;
         default:
-          target = card.ability.effect.value!;
+          target = card!.ability.effect.value!;
           break;
       }
       break;
     case TargetTypes.EXPIRATION:
-      target = trigger.ability.expiration!.numActivations;
+      target = trigger!.expiration!.numActivations;
       break;
     default:
-      target = card.ability.effect.value!;
+      target = card!.ability.effect.value!;
       break;
   }
 

@@ -1,9 +1,9 @@
 {
   "name": "simulcast-backend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "scripts": {
-    "build": "tsc -b",
+    "build": "npm rebuild simulcast-common && tsc -b",
     "server": "ts-node src/server.ts",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
@@ -13,7 +13,9 @@
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "mobx-state-tree": "^7.0.1",
+    "simulcast-common": "file:../common",
     "socket.io": "^4.8.1",
+    "unique-names-generator": "^4.7.1",
     "uuid": "^11.0.5"
   },
   "devDependencies": {

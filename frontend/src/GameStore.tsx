@@ -8,7 +8,20 @@ import {
 } from "mobx-state-tree";
 import { io, Socket } from "socket.io-client";
 
-import { v4 as uuidv4 } from "uuid";
+import {
+  uniqueNamesGenerator,
+  adjectives,
+  colors,
+  animals,
+} from "unique-names-generator";
+
+const randomName = () => {
+  return uniqueNamesGenerator({
+    dictionaries: [adjectives, colors, animals], // three dictionaries of words
+    separator: "-", // use '-' to join words
+    length: 3, // number of words
+  });
+};
 
 const BACKEND_URL: string =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -21,7 +34,7 @@ export const CardModel = types.model("Card", {
   id: types.string,
   content: types.string,
   cost: types.number,
-  speed: types.number,
+  time: types.number,
   timer: types.optional(types.maybeNull(types.number), null),
 });
 
@@ -171,10 +184,6 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
   ) {
     const sourceItems = self.getZone(sourceZone);
     const targetItems = self.getZone(targetZone);
-    if (targetZone === "dropzone" && cardCost > self.mana) {
-      console.log("Not enough Mana");
-      return;
-    }
     const sourceIndex = sourceItems.findIndex(
       (card) => card.id === activeCardId,
     );
@@ -319,7 +328,7 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
    * Expects the backend to return a { gameId, playerId }.
    */
   createGame: flow(function* createGame() {
-    const gameId = uuidv4().split("-")[0];
+    const gameId = randomName();
     try {
       const response = yield fetch(urlOf("/api/game/create"), {
         method: "POST",

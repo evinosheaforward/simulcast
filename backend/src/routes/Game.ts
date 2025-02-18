@@ -1,14 +1,27 @@
 // backend/routes/game.ts
 import { Router, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
-import { v4 as uuidv4 } from "uuid";
-import { Card, populate } from "../models/Deck";
+import { Card, populate } from "simulcast-common";
 import Game, { GameState } from "../models/RulesEngine";
 
-// In-memory store for games
+import {
+  uniqueNamesGenerator,
+  adjectives,
+  colors,
+  animals,
+} from "unique-names-generator";
+
 const games: Map<string, Game> = new Map();
 
 const router = Router();
+
+const randomName = () => {
+  return uniqueNamesGenerator({
+    dictionaries: [adjectives, colors, animals], // three dictionaries of words
+    separator: "-", // use '-' to join words
+    length: 3, // number of words
+  });
+};
 
 /** POST /api/game/create
  *  Creates a new game using an optional gameId and a host playerName.
@@ -16,7 +29,9 @@ const router = Router();
  */
 router.post("/create", (req: Request, res: Response) => {
   const { gameId } = req.body;
-  const finalGameId = gameId || uuidv4().split("-")[0];
+  console.log("game ID: ", gameId);
+  const finalGameId = gameId || randomName();
+  console.log("final game ID: ", finalGameId);
   const newGame = new Game(finalGameId);
   games.set(finalGameId, newGame);
   res.json({ gameId: finalGameId, playerId: newGame.players[0].id });
