@@ -35,7 +35,7 @@ class Game {
   constructor(id: string) {
     this.id = id;
     const hostPlayer: Player = {
-      id: uuidv4(),
+      id: uuidv4().split("-")[0],
       hand: [],
       dropzone: [],
       submitted: false,
@@ -50,7 +50,7 @@ class Game {
 
   addPlayer() {
     const joinPlayer: Player = {
-      id: uuidv4(),
+      id: uuidv4().split("-")[0],
       hand: [],
       dropzone: [],
       submitted: false,
@@ -64,12 +64,22 @@ class Game {
     return joinPlayer;
   }
 
+  async playerJoined(playerId: string, io: Server) {
+    await new FrontEndUpdate(null, null, `Player ${playerId} joined`).send(
+      io,
+      this.rulesEngine.gameId,
+    );
+  }
+
   async startGame(io: Server) {
     console.log("starting new game");
+    await new FrontEndUpdate(null, null, "Game Starting").send(
+      io,
+      this.rulesEngine.gameId,
+    );
     this.players.forEach((p) => {
       this.decks.set(p.id, NewDeck());
     });
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     this.newRound(io);
   }
 
@@ -116,16 +126,12 @@ class Game {
       player.cardDraw = 0;
     });
     await this.rulesEngine.resolveRound(this.players, io);
-    const endRoundUpdate = new FrontEndUpdate(null);
+    const endRoundUpdate = new FrontEndUpdate(null, null, "Round Ended");
     this.players.forEach((p) => {
       endRoundUpdate.setDropzone(p.id, p.dropzone);
     });
+    endRoundUpdate.send(io, this.rulesEngine.gameId);
     console.log("RESOLVE ROUND OVER");
-    io.to(this.rulesEngine.gameId).emit(
-      "resolveEvent",
-      endRoundUpdate.toObject(),
-    );
-    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   /** Utility: Draw a hand (abstract implementation) */
@@ -188,7 +194,7 @@ class RulesEngine {
         card.timer = card.time;
       });
     });
-    this.sendActivePlayerUpdate(player1.id, io);
+    await this.sendActivePlayerUpdate(player1.id, io);
     try {
       let lastPlayer: string = player1.id;
       while (this.players.some((p) => p.dropzone.length > 0)) {
@@ -230,6 +236,7 @@ class RulesEngine {
                 new FrontEndUpdate(
                   this.activePlayer!,
                   player.dropzone,
+                  "card was somehow null?",
                 ).toObject(),
               );
               await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -261,103 +268,113 @@ class RulesEngine {
   async cast(card: Card, io: Server) {
     const resolves = await this.triggersAbility(card, io);
     if (resolves) {
-      await this.useAbility(card.ability, io);
+      await this.useAbility(card, io);
     }
   }
 
   async useAbility(
-    ability: Ability,
+    // card being cast or card trigger
+    activeCard: Card,
     io: Server,
     owningPlayer: string | null = null,
     triggered: boolean = false,
-    card: Card | null = null,
+    targetCard: Card | null = null,
   ) {
     if (!owningPlayer) {
       owningPlayer = this.activePlayer;
     }
     console.log(
-      `useAbility:\n  player: ${owningPlayer}\n  triggerd: ${triggered}\n  ability: ${JSON.stringify(ability)}`,
+      `useAbility:\n  player: ${owningPlayer}\n  triggerd: ${triggered}\n  ability: ${JSON.stringify(activeCard.ability)}`,
     );
     let updateEvent = new FrontEndUpdate(this.activePlayer!);
-    if (ability.effect.immediate || triggered) {
+    if (activeCard.ability.effect.immediate || triggered) {
       let targetPlayer: Player;
-      if (ability.effect.targetPlayer === PlayerTargets.SELF) {
+      if (activeCard.ability.effect.targetPlayer === PlayerTargets.SELF) {
         targetPlayer = this.players.filter((p) => p.id === owningPlayer)[0];
       } else {
         targetPlayer = this.players.filter((p) => p.id !== owningPlayer)[0];
       }
-      switch (ability.effect.target) {
+      switch (activeCard.ability.effect.target) {
         case TargetTypes.DAMAGE:
-          switch (ability.effect.subtype) {
+          switch (activeCard.ability.effect.subtype) {
             case TargetSubTypes.PREVENTION:
-              if (ability.effect.value) {
-                card!.ability.effect.value! = Math.max(
-                  card!.ability.effect.value! - ability.effect.value,
+              if (activeCard.ability.effect.value) {
+                targetCard!.ability.effect.value! = Math.max(
+                  targetCard!.ability.effect.value! -
+                    activeCard.ability.effect.value,
                   0,
                 );
               } else {
-                card!.ability.effect.value! = 0;
+                targetCard!.ability.effect.value! = 0;
               }
+              updateEvent.updateLog = `${activeCard.id} reduced the damage of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
               break;
             default:
-              targetPlayer.health -= ability.effect.value!;
+              targetPlayer.health -= activeCard.ability.effect.value!;
               updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
+              updateEvent.updateLog = `${activeCard.id} dealt ${activeCard.ability.effect.value!} damage to ${targetPlayer.id}`;
               break;
           }
           break;
         case TargetTypes.HEALTH:
-          targetPlayer.health += ability.effect.value!;
+          targetPlayer.health += activeCard.ability.effect.value!;
           updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
+          updateEvent.updateLog = `${activeCard.id} healed ${activeCard.ability.effect.value!} to ${targetPlayer.id}`;
           break;
         case TargetTypes.DRAW:
           targetPlayer.cardDraw = Math.max(
-            (targetPlayer.cardDraw += ability.effect.value!),
+            (targetPlayer.cardDraw += activeCard.ability.effect.value!),
             0,
           );
+          updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} draw to ${targetPlayer.id}`;
           break;
         case TargetTypes.MANA:
-          targetPlayer.mana += ability.effect.value!;
+          targetPlayer.mana += activeCard.ability.effect.value!;
           updateEvent.setMana(targetPlayer.id, targetPlayer.mana);
+          updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} mana to ${targetPlayer.id}`;
           break;
         case TargetTypes.SPELL:
-          switch (ability.effect.subtype) {
+          switch (activeCard.ability.effect.subtype) {
             case TargetSubTypes.PREVENTION:
               // delete the card
-              targetPlayer.dropzone.shift();
+              let preventedCard = targetPlayer.dropzone.shift();
+              updateEvent.updateLog = `${activeCard.id} countered ${preventedCard ? preventedCard.id : "nothing"}`;
               break;
             case TargetSubTypes.SPELL_TIME:
               // change time
               if (targetPlayer.dropzone[0]) {
                 targetPlayer.dropzone[0].timer! = Math.max(
-                  targetPlayer.dropzone[0].timer! + ability.effect.value!,
+                  targetPlayer.dropzone[0].timer! +
+                    activeCard.ability.effect.value!,
                   0,
                 );
+                updateEvent.updateLog = `${activeCard.id} changed the time of ${targetPlayer.dropzone[0].id} by ${activeCard.ability.effect.value!}`;
               }
               break;
             default:
-              console.log("SPELL TARGET card:", JSON.stringify(card));
-              card!.ability.effect.value! = Math.max(
-                card!.ability.effect.value! + ability.effect.value!,
-                0,
+              console.log("SPELL TARGET card:", JSON.stringify(targetCard));
+              targetCard!.ability.effect.value! = Math.max(
+                targetCard!.ability.effect.value! +
+                  activeCard.ability.effect.value!,
               );
+              updateEvent.updateLog = `${activeCard.id} changed the ${targetCard!.ability.effect.target} of ${targetCard!.id} by ${activeCard.ability.effect.value!}`;
               break;
           }
       }
     } else {
-      this.abilityQueue.add(ability, owningPlayer!);
+      this.abilityQueue.add(activeCard, owningPlayer!);
+      updateEvent.updateLog = `${activeCard.id} saved as passive ability`;
     }
 
     this.players.forEach((p) => {
       updateEvent.setDropzone(p.id, p.dropzone);
     });
 
-    console.log("resolveEvent", JSON.stringify(updateEvent.toObject()));
-    io.to(this.gameId).emit("resolveEvent", updateEvent.toObject());
+    await updateEvent.send(io, this.gameId);
     console.log("sleep");
-    if (triggered) {
+    if (!triggered) {
       await new Promise((resolve) => setTimeout(resolve, 500));
     } else {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     this.players.forEach((p) => {
@@ -367,20 +384,25 @@ class RulesEngine {
     });
   }
 
-  async triggersAbility(card: Card, io: Server) {
+  async triggersAbility(activeCard: Card, io: Server) {
     let resolves = true;
-    for (const { player, ability } of this.abilityQueue.triggeredAbilites(
-      card,
+    for (const {
+      player: player,
+      card: triggeredCard,
+    } of await this.abilityQueue.triggeredAbilites(
+      activeCard,
       this.activePlayer!,
+      io,
+      this.gameId,
     )) {
       if (
-        ability.effect.target === TargetTypes.SPELL &&
-        ability.effect.subtype === TargetSubTypes.PREVENTION
+        triggeredCard.ability.effect.target === TargetTypes.SPELL &&
+        triggeredCard.ability.effect.subtype === TargetSubTypes.PREVENTION
       ) {
         resolves = false;
       } else {
         // resolve the triggered ability
-        await this.useAbility(ability, io, player, true, card);
+        await this.useAbility(triggeredCard, io, player, true, activeCard);
       }
     }
     return resolves;
@@ -392,46 +414,59 @@ class RulesEngine {
     io: Server,
   ) {
     console.log(`expireAbilities - ${expiration.toString()}`);
-    const triggeredOnExpire = this.abilityQueue.expireAbilities(
+    const triggeredOnExpire = await this.abilityQueue.expireAbilities(
       expiration,
       player,
+      io,
+      this.gameId,
     );
-    for (const { player, ability } of triggeredOnExpire) {
-      await this.useAbility(ability, io, player, true);
+    for (const { player, card } of triggeredOnExpire) {
+      await this.useAbility(card, io, player, true);
     }
   }
 
   async sendDropzoneUpdate(player: Player, io: Server) {
-    io.to(this.gameId).emit(
-      "resolveEvent",
-      new FrontEndUpdate(this.activePlayer!, player.dropzone).toObject(),
+    await new FrontEndUpdate(this.activePlayer!, player.dropzone).send(
+      io,
+      this.gameId,
     );
-    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   async sendActivePlayerUpdate(playerId: string, io: Server) {
-    io.to(this.gameId).emit("resolveEvent", new FrontEndUpdate(playerId));
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new FrontEndUpdate(playerId).send(io, this.gameId);
   }
 }
 
 class AbilityQueue {
   abilities: ActiveAbility[] = [];
 
-  add(ability: Ability, player: string) {
-    this.abilities.push({ ability: ability, player: player } as ActiveAbility);
+  add(card: Card, player: string) {
+    this.abilities.push({
+      card: card,
+      player: player,
+    } as ActiveAbility);
   }
 
   playerAbilites(player: string) {
     return this.abilities.filter((ability) => ability.player === player);
   }
 
-  triggeredAbilites(card: Card, activePlayer: string) {
+  async triggeredAbilites(
+    card: Card,
+    activePlayer: string,
+    io: Server,
+    gameId: string,
+  ) {
     let i = 0;
     const triggers = [];
     while (i < this.abilities.length) {
       if (triggerMatches(card, activePlayer, this.abilities[i])) {
-        if (this.abilities[i].ability.trigger?.expiresOnTrigger) {
+        await new FrontEndUpdate(
+          null,
+          null,
+          `${this.abilities[i].card.id} triggered`,
+        ).send(io, gameId);
+        if (this.abilities[i].card.ability.trigger?.expiresOnTrigger) {
           triggers.push(this.abilities.splice(i, 1)[0]);
         } else {
           triggers.push(this.abilities[i]);
@@ -444,13 +479,18 @@ class AbilityQueue {
     return triggers;
   }
 
-  expireAbilities(expiration: AbilityExpirations, activePlayer: string) {
+  async expireAbilities(
+    expiration: AbilityExpirations,
+    activePlayer: string,
+    io: Server,
+    gameId: string,
+  ) {
     let i = 0;
     const triggers = [];
-    let currentTrigger: Ability;
+    let currentTrigger: Card;
     let owningPlayer: string;
     while (i < this.abilities.length) {
-      currentTrigger = this.abilities[i].ability;
+      currentTrigger = this.abilities[i].card;
       owningPlayer = this.abilities[i].player;
       console.log(
         `expireAbilities: ${expiration.toString()} - ${JSON.stringify(currentTrigger)}`,
@@ -458,30 +498,46 @@ class AbilityQueue {
 
       // Expiration-type triggers
       if (
-        currentTrigger.trigger!.target === TargetTypes.EXPIRATION &&
-        currentTrigger.trigger!.subtype === expiration &&
-        evalCondition(currentTrigger.condition, currentTrigger)
+        currentTrigger.ability.trigger!.target === TargetTypes.EXPIRATION &&
+        currentTrigger.ability.trigger!.subtype === expiration &&
+        evalCondition(currentTrigger.ability.condition, currentTrigger.ability)
       ) {
+        console.log(`${expiration} expiration triggered ${currentTrigger.id}`);
+        await new FrontEndUpdate(
+          null,
+          null,
+          `${currentTrigger.id} triggered`,
+        ).send(io, gameId);
         triggers.push(this.abilities[i]);
       }
 
       // Expirations and trigger on expiration
       if (
-        currentTrigger.expiration!.type === expiration &&
+        currentTrigger.ability.expiration!.type === expiration &&
         evalExpiration(
           expiration,
           owningPlayer,
           activePlayer,
-          currentTrigger.effect.targetPlayer,
+          currentTrigger.ability.effect.targetPlayer,
         )
       ) {
-        currentTrigger.expiration!.numActivations -= 1;
-        if (currentTrigger.expiration!.numActivations < 1) {
+        currentTrigger.ability.expiration!.numActivations -= 1;
+        if (currentTrigger.ability.expiration!.numActivations < 1) {
           console.log("should expire ability");
-          if (currentTrigger.expiration?.triggerOnExpiration) {
+          if (currentTrigger.ability.expiration?.triggerOnExpiration) {
             triggers.push(this.abilities.splice(i, 1)[0]);
+            await new FrontEndUpdate(
+              null,
+              null,
+              `${currentTrigger.id} triggered and expired`,
+            ).send(io, gameId);
           } else {
             this.abilities.splice(i, 1);
+            await new FrontEndUpdate(
+              null,
+              null,
+              `${currentTrigger.id} expired`,
+            ).send(io, gameId);
           }
         } else {
           i++;
@@ -516,27 +572,31 @@ export function evalExpiration(
 }
 
 export function triggerMatches(
-  card: Card,
+  activeCard: Card,
   activePlayer: string,
   currentTrigger: ActiveAbility,
 ) {
   if (
     // player matches
-    ((currentTrigger.ability.effect.targetPlayer === PlayerTargets.SELF &&
+    ((currentTrigger.card.ability.effect.targetPlayer === PlayerTargets.SELF &&
       currentTrigger.player === activePlayer) ||
-      (currentTrigger.ability.effect.targetPlayer === PlayerTargets.OPPONENT &&
+      (currentTrigger.card.ability.effect.targetPlayer ===
+        PlayerTargets.OPPONENT &&
         currentTrigger.player !== activePlayer)) &&
     // trigger matches
-    currentTrigger.ability.trigger?.target === card.ability.effect.target &&
-    (!currentTrigger.ability.trigger?.subtype ||
-      currentTrigger.ability.trigger.subtype === card.ability.effect.subtype) &&
+    currentTrigger.card.ability.trigger?.target ===
+      activeCard.ability.effect.target &&
+    (!currentTrigger.card.ability.trigger?.subtype ||
+      currentTrigger.card.ability.trigger.subtype ===
+        activeCard.ability.effect.subtype) &&
     // check condition matches, if there is one
     evalCondition(
-      currentTrigger.ability.condition,
-      currentTrigger.ability,
-      card,
+      currentTrigger.card.ability.condition,
+      currentTrigger.card.ability,
+      activeCard,
     )
   ) {
+    console.log(`${activeCard.id} triggered ${currentTrigger.card.id}`);
     return true;
   }
   return false;
@@ -591,12 +651,19 @@ class FrontEndUpdate {
   health: Map<string, number> | null = null;
   mana: Map<string, number> | null = null;
   tickPlayer: string | null;
-  updateKey: string = uuidv4().split("-")[0];
+  updateLog: string = "";
 
-  constructor(playerId: string | null, dropzone: Card[] | null = null) {
+  constructor(
+    playerId: string | null,
+    dropzone: Card[] | null = null,
+    updateLog: string | null = null,
+  ) {
     this.tickPlayer = playerId;
     if (dropzone) {
       this.setDropzone(playerId!, dropzone);
+    }
+    if (updateLog) {
+      this.updateLog = updateLog;
     }
   }
 
@@ -626,8 +693,14 @@ class FrontEndUpdate {
       dropzone: this.dropzone != null ? [...this.dropzone] : null,
       health: this.health != null ? [...this.health] : null,
       tick: this.tickPlayer,
-      updateKey: this.updateKey,
+      updateLog: this.updateLog,
     };
+  }
+
+  async send(io: Server, gameId: string) {
+    console.log("resolveEvent", JSON.stringify(this.toObject()));
+    io.to(gameId).emit("resolveEvent", this.toObject());
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 

@@ -35,7 +35,6 @@ export default function Root() {
           <div className="w-full place-items-center gap-2 grid grid-cols-[repeat(auto-fit,80px)] justify-center">
             {sortedDeck.map((card) => (
               <motion.div
-                key={card.id}
                 layout
                 whileHover={{ scale: 1.75, zIndex: 1000 }}
                 whileTap={{ scale: 1.75, zIndex: 1000 }}

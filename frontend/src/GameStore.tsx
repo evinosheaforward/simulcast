@@ -58,7 +58,7 @@ export const GameStoreBase = types
     opponentMana: types.optional(types.number, Number.MIN_SAFE_INTEGER),
     gameOver: types.optional(types.boolean, false),
     tick: types.optional(types.maybeNull(types.string), null),
-    updateKey: types.optional(types.string, ""),
+    updateLog: types.optional(types.array(types.string), []),
     error: types.maybe(types.string),
   })
   .volatile((_) => ({
@@ -138,8 +138,8 @@ export const GameStoreBase = types
     setTick(playerId: string) {
       self.tick = playerId;
     },
-    setUpdateKey(key: string) {
-      self.updateKey = key;
+    setUpdateLog(log: string) {
+      self.updateLog.push(log);
     },
     setZone(zone: string, update: typeof self.hand) {
       if (zone === "hand") {
@@ -282,7 +282,7 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
           },
         );
       }
-      if (updateEvent.health !== null) {
+      if (updateEvent.health != null) {
         updateEvent.health.forEach(
           ([playerId, newHealth]: [string, number]) => {
             console.log(
@@ -299,7 +299,7 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
           },
         );
       }
-      if (updateEvent.mana !== null) {
+      if (updateEvent.mana != null) {
         updateEvent.mana.forEach(([playerId, newMana]: [string, number]) => {
           console.log("resolveEvent mana: ", self.playerId, playerId, newMana);
           if (self.playerId == playerId) {
@@ -308,6 +308,9 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
             self.setOpponentMana(newMana);
           }
         });
+      }
+      if (updateEvent.updateLog?.trim()) {
+        self.setUpdateLog(updateEvent.updateLog);
       }
     });
     self.socket.on("gameOver", (result: { winner: string }) => {

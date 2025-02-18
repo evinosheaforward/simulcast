@@ -77,8 +77,10 @@ export function handleSocketConnection(io: Server, socket: Socket) {
       socket.join(playerId);
       console.log(`player: ${playerId} joined player socket`);
 
+      await game.playerJoined(playerId, io);
+
       if (game.players.length === 2) {
-        game.startGame(io);
+        await game.startGame(io);
       } else {
         socket.emit("waitingForOpponent");
       }

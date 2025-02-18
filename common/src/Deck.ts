@@ -75,7 +75,7 @@ export type Card = {
 
 export interface ActiveAbility {
   player: string;
-  ability: Ability;
+  card: Card;
 }
 
 export function populate(cards: Card[]) {

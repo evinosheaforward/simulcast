@@ -12,7 +12,7 @@ import gameStore, { CardSnapshot } from "./GameStore";
 import GameOptions from "./GameStart";
 import { CardDragOverlayComponent } from "./Card";
 import { getSnapshot } from "mobx-state-tree";
-import { Notification } from "./Utilities";
+import { Notification, UpdateLog } from "./Utilities";
 import PageFrame from "./PageFrame";
 
 export const ROUND_DURATION = 15; // seconds
@@ -186,6 +186,15 @@ const PlayerBoard: React.FC = () => {
         {/* Header */}
         <GameOptions />
 
+        <UpdateLog>
+          {gameData.updateLog.map((log) => (
+            <p>
+              {log}
+              <br />
+            </p>
+          ))}
+        </UpdateLog>
+
         {/* Opponent Drop Zone */}
         <div className="text-center justify-center text-white">
           <p>
@@ -209,7 +218,7 @@ const PlayerBoard: React.FC = () => {
             </span>
           </p>
         </div>
-        <OpponentDropZone key={gameStore.updateKey + "opponentDropzone"} />
+        <OpponentDropZone key="opponentDropzone" />
 
         <div className="text-center justify-center text-white">
           <p className="mb-2 font-bold">
@@ -256,10 +265,7 @@ const PlayerBoard: React.FC = () => {
           )}
         </div>
 
-        <CardContainerComponent
-          key={gameStore.updateKey + "dropzone"}
-          id="dropzone"
-        />
+        <CardContainerComponent id="dropzone" />
 
         <div className="grid w-full place-items-center">
           {gameData.gameStatus == "PLAY" ? (

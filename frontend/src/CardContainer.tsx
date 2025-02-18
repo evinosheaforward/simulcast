@@ -32,11 +32,7 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({ id }) => {
             {gameData.getZone(id).length > 0 ? (
               <AnimatePresence>
                 {gameData.getZone(id).map((card) => (
-                  <CardComponent
-                    key={gameData.updateKey + card.id}
-                    card={card}
-                    containerId={id}
-                  />
+                  <CardComponent card={card} containerId={id} />
                 ))}
               </AnimatePresence>
             ) : (
@@ -74,10 +70,7 @@ export const OpponentDropZone: React.FC = () => {
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#D35400] text-white shadow-md"
               >
-                <CardFrameComponent
-                  key={gameData.updateKey + card.id}
-                  card={card}
-                />
+                <CardFrameComponent card={card} />
               </motion.div>
             ))
           )}

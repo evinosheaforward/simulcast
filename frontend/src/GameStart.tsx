@@ -30,7 +30,7 @@ const GameOptions: React.FC = () => {
       <div className="justify-center">
         <button
           onClick={handleJoinGame}
-          className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 sm:px-1 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
+          className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
         >
           Join Game
         </button>
@@ -41,11 +41,11 @@ const GameOptions: React.FC = () => {
           placeholder="Game ID to Join"
           value={joinGameId}
           onChange={(e) => setJoinGameId(e.target.value)}
-          className="flex-none w-50 bg-gray-700 text-center text-white border border-gray-600 rounded py-2 sm:px-1 focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="flex-none w-50 bg-gray-700 text-center text-white border border-gray-600 rounded py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
         />
       </div>
 
-      <div className="justify-center gap-1 text-center text-white grid grid-rows-3">
+      <div className="justify-center text-center text-white grid grid-rows-2 gap-1">
         {gameData.gameId ? (
           <>
             <div>Connected to game:</div>
