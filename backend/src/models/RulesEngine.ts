@@ -291,9 +291,8 @@ class RulesEngine {
           switch (ability.effect.subtype) {
             case TargetSubTypes.PREVENTION:
               if (ability.effect.value) {
-                targetPlayer.dropzone[0].ability.effect.value! = Math.max(
-                  targetPlayer.dropzone[0].ability.effect.value! -
-                    ability.effect.value,
+                card!.ability.effect.value! = Math.max(
+                  card!.ability.effect.value! - ability.effect.value,
                   0,
                 );
               } else {
@@ -341,7 +340,6 @@ class RulesEngine {
                 card!.ability.effect.value! + ability.effect.value!,
                 0,
               );
-
               break;
           }
       }
@@ -457,6 +455,17 @@ class AbilityQueue {
       console.log(
         `expireAbilities: ${expiration.toString()} - ${JSON.stringify(currentTrigger)}`,
       );
+
+      // Expiration-type triggers
+      if (
+        currentTrigger.trigger!.target === TargetTypes.EXPIRATION &&
+        currentTrigger.trigger!.subtype === expiration &&
+        evalCondition(currentTrigger.condition, currentTrigger)
+      ) {
+        triggers.push(this.abilities[i]);
+      }
+
+      // Expirations and trigger on expiration
       if (
         currentTrigger.expiration!.type === expiration &&
         evalExpiration(
@@ -467,11 +476,7 @@ class AbilityQueue {
         )
       ) {
         currentTrigger.expiration!.numActivations -= 1;
-        if (
-          currentTrigger.expiration!.numActivations < 1 ||
-          (currentTrigger.trigger?.target === TargetTypes.EXPIRATION &&
-            evalCondition(currentTrigger.condition!, currentTrigger))
-        ) {
+        if (currentTrigger.expiration!.numActivations < 1) {
           console.log("should expire ability");
           if (currentTrigger.expiration?.triggerOnExpiration) {
             triggers.push(this.abilities.splice(i, 1)[0]);
@@ -525,13 +530,12 @@ export function triggerMatches(
     currentTrigger.ability.trigger?.target === card.ability.effect.target &&
     (!currentTrigger.ability.trigger?.subtype ||
       currentTrigger.ability.trigger.subtype === card.ability.effect.subtype) &&
-    // condition matches, if there is one
-    (!currentTrigger.ability.condition ||
-      evalCondition(
-        currentTrigger.ability.condition!,
-        currentTrigger.ability,
-        card,
-      ))
+    // check condition matches, if there is one
+    evalCondition(
+      currentTrigger.ability.condition,
+      currentTrigger.ability,
+      card,
+    )
   ) {
     return true;
   }
@@ -539,7 +543,7 @@ export function triggerMatches(
 }
 
 function evalCondition(
-  condition: Condition,
+  condition: Condition | undefined,
   trigger: Ability,
   card: Card | null = null,
 ) {
@@ -549,6 +553,9 @@ function evalCondition(
     JSON.stringify(card?.ability),
     JSON.stringify(trigger),
   );
+  if (condition == null) {
+    return true;
+  }
   switch (condition.target) {
     case TargetTypes.SPELL:
       switch (condition.subtype) {

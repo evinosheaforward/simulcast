@@ -16,13 +16,13 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({ id }) => {
   const { setNodeRef } = useDroppable({ id });
 
   return (
-    <div className="mb-1">
+    <div className="mb-1 mt-1">
       <section>
         <motion.div
           ref={setNodeRef}
           id={id}
           layout
-          className="flex-shrink-0 flex justify-center touch-pan-x items-center p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 h-[140px] w-full shadow-sm"
+          className="h-[140px] w-full flex flex-shrink-0 justify-center touch-pan-x items-center p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm"
         >
           <SortableContext
             items={gameData.getZone(id).map((card) => card.id) && [id]}
@@ -57,9 +57,9 @@ export default CardContainerComponent;
 export const OpponentDropZone: React.FC = () => {
   const gameData = useObservable(gameStore);
   return (
-    <div className="mb-1">
+    <div className="mb-1 mt-1 w-full">
       <section>
-        <div className="flex-shrink-0 flex justify-center items-center flex-wrap p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 h-[140px] w-full shadow-sm">
+        <div className="flex-shrink-0 flex h-[140px] w-full justify-center items-center flex-wrap p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm">
           {gameData.opponentDropzone.length === 0 ? (
             <EmptyCard
               container="opponentDropzone"

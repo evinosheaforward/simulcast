@@ -7,6 +7,7 @@ export enum TargetTypes {
   DRAW = "DRAW",
   MANA = "MANA",
   SPELL = "SPELL",
+  // Trigger at expiration event
   EXPIRATION = "EXPIRATION",
 }
 
@@ -51,11 +52,12 @@ export interface Ability {
   // when triggered, what condition to resolve
   trigger?: {
     target?: TargetTypes;
-    subtype?: TargetSubTypes;
+    subtype?: TargetSubTypes | AbilityExpirations;
     expiresOnTrigger?: boolean;
   };
   expiration?: {
     type: AbilityExpirations;
+    // Trigger when the numActivations = 0
     triggerOnExpiration?: boolean;
     numActivations: number;
   };
@@ -85,14 +87,14 @@ export function populate(cards: Card[]) {
 export const Deck: Card[] = [
   {
     id: "Crown",
-    content: "Gain 3 mana.",
+    content: "Gain 4 mana.",
     cost: 2,
     time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
         target: TargetTypes.MANA,
-        value: 3,
+        value: 4,
         immediate: true,
       },
     },
@@ -188,8 +190,9 @@ export const Deck: Card[] = [
     time: 4,
     ability: {
       effect: {
-        targetPlayer: PlayerTargets.SELF,
+        targetPlayer: PlayerTargets.OPPONENT,
         target: TargetTypes.DAMAGE,
+        subtype: TargetSubTypes.PREVENTION,
       },
       trigger: {
         target: TargetTypes.DAMAGE,
@@ -218,6 +221,7 @@ export const Deck: Card[] = [
       },
       trigger: {
         target: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND,
       },
       expiration: {
         numActivations: 3,
@@ -290,7 +294,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Counter",
-    content: "Counter the opponent's next spell this turn.",
+    content: "Prevent the opponent's next spell from activating this turn.",
     cost: 2,
     time: 1,
     ability: {
@@ -367,16 +371,23 @@ export const Deck: Card[] = [
   },
   {
     id: "Inferno",
-    content: "Deal 6 damage",
+    content: "After each of your opponent's spells activate this turn, they take 2 damage.",
     cost: 6,
-    time: 4,
+    time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         target: TargetTypes.DAMAGE,
-        value: 6,
-        immediate: true,
+        value: 2,
       },
+      trigger: {
+        target: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.NEXT_CARD,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      }
     },
   },
   {

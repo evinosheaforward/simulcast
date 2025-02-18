@@ -45,14 +45,12 @@ const GameOptions: React.FC = () => {
         />
       </div>
 
-      <div className="justify-center flex flex-col gap-1 text-center text-white grid grid-rows-2">
+      <div className="justify-center gap-1 text-center text-white grid grid-rows-3">
         {gameData.gameId ? (
           <>
+            <div>Connected to game:</div>
             <div>
-              <p>
-                Connected to game:{" "}
-                <span className="font-bold">{gameData.gameId}</span>
-              </p>
+              <span className="font-bold">{gameData.gameId}</span>
             </div>
           </>
         ) : (
@@ -60,6 +58,7 @@ const GameOptions: React.FC = () => {
             <div>
               <p>Not connected to a game.</p>
             </div>
+            <div></div>
           </>
         )}
       </div>

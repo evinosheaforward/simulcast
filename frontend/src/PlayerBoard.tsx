@@ -261,10 +261,10 @@ const PlayerBoard: React.FC = () => {
           id="dropzone"
         />
 
-        <div className="w-full items-center">
+        <div className="grid w-full place-items-center">
           {gameData.gameStatus == "PLAY" ? (
             <button
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-101"
+              className="w-full justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-101"
               onClick={handleSubmitCards}
             >
               Submit Early - You have {timeRemaining} second
@@ -272,7 +272,7 @@ const PlayerBoard: React.FC = () => {
             </button>
           ) : (
             <button
-              className="w-full bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md"
+              className="w-full justify-center bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md"
               onClick={handleSubmitCards}
             >
               {gameData.gameOver
