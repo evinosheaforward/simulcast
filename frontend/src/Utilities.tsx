@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 
 interface NotificationProps {
@@ -32,12 +32,14 @@ interface UpdateLogProps {
 
 export const UpdateLog: React.FC<UpdateLogProps> = ({ children }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [once, setOnce] = useState<boolean>(true);
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (once && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setOnce(false);
     }
-  }, []); // Scroll to bottom when children change
+  }, [children, setOnce]); // Scroll to bottom when children change
 
   return (
     <div className="grid justify-items-center items-center">

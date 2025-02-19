@@ -202,7 +202,13 @@ const PlayerBoard: React.FC = () => {
             gameData.tick != null &&
             gameData.tick !== gameData.playerId
               ? "⏳"
-              : "  "}{" "}
+              : "  "}
+            {""}
+            <b>
+              {gameData.opponentPlayerId
+                ? `${gameData.opponentPlayerId}: `
+                : "Opponent: "}
+            </b>
             Health:{" "}
             <span className="font-bold">
               {gameData.opponentHealth === Number.MIN_SAFE_INTEGER
@@ -240,6 +246,7 @@ const PlayerBoard: React.FC = () => {
             gameData.tick === gameData.playerId
               ? "⏳"
               : "  "}{" "}
+            <b>{gameData.playerId ? `${gameData.playerId}: ` : "You: "}</b>
             Health:{" "}
             <span className="font-bold">
               {gameData.health === Number.MIN_SAFE_INTEGER

@@ -151,7 +151,7 @@ export default function Root() {
                             card that deals damage (this includes, e.g. Bow).
                           </li>
                           <li>
-                            Cards with triggers "expire". This means that thier
+                            Cards with triggers "expire". This means that their
                             effect lasts until a certain time. For example,
                             cloud triggers on a damage card from the opponent.
                             It expires when triggered, or at the end of the

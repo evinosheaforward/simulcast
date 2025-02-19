@@ -1,27 +1,12 @@
 // backend/routes/game.ts
 import { Router, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
-import { Card, populate } from "simulcast-common";
+import { Card, populate, randomName } from "simulcast-common";
 import Game, { GameState } from "../models/RulesEngine";
-
-import {
-  uniqueNamesGenerator,
-  adjectives,
-  colors,
-  animals,
-} from "unique-names-generator";
 
 const games: Map<string, Game> = new Map();
 
 const router = Router();
-
-const randomName = () => {
-  return uniqueNamesGenerator({
-    dictionaries: [adjectives, colors, animals], // three dictionaries of words
-    separator: "-", // use '-' to join words
-    length: 2, // number of words
-  });
-};
 
 /** POST /api/game/create
  *  Creates a new game using an optional gameId and a host playerName.

@@ -14,9 +14,8 @@ import {
   TargetTypes,
   CARDS_PER_TURN,
   MANA_PER_TURN,
+  randomName,
 } from "simulcast-common";
-
-import { v4 as uuidv4 } from "uuid";
 
 export enum GameState {
   WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",
@@ -35,7 +34,7 @@ class Game {
   constructor(id: string) {
     this.id = id;
     const hostPlayer: Player = {
-      id: uuidv4().split("-")[0],
+      id: randomName(),
       hand: [],
       dropzone: [],
       submitted: false,
@@ -50,7 +49,7 @@ class Game {
 
   addPlayer() {
     const joinPlayer: Player = {
-      id: uuidv4().split("-")[0],
+      id: randomName(),
       hand: [],
       dropzone: [],
       submitted: false,
@@ -73,6 +72,10 @@ class Game {
 
   async startGame(io: Server) {
     console.log("starting new game");
+    io.to(this.rulesEngine.gameId).emit(
+      "gameStart",
+      this.players.map((p) => p.id),
+    );
     await new FrontEndUpdate(null, null, "Game Starting").send(
       io,
       this.rulesEngine.gameId,
@@ -159,6 +162,9 @@ class Game {
     return structuredClone(result.map((cardId) => DeckMap.get(cardId)!));
   }
 }
+
+export default Game;
+
 export interface Player {
   id: string;
   socketId?: string;
@@ -254,6 +260,11 @@ class RulesEngine {
         io.to(this.gameId).emit("gameOver", {
           winner: this.players.filter((p) => p.id != error.playerId)[0].id,
         });
+        await new FrontEndUpdate(
+          null,
+          null,
+          `${error.playerId} died - Game Over`,
+        );
         io.to(this.gameId).disconnectSockets();
         for (const playerId of this.players.map((p) => p.id)) {
           io.to(playerId).disconnectSockets();
@@ -739,7 +750,6 @@ class FrontEndUpdate {
   }
 }
 
-export default Game;
 class PlayerDiedError extends Error {
   public playerId: string;
 

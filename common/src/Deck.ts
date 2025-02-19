@@ -118,7 +118,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Cloud",
-    content: "Reduce the value to 0 of the next damage spell your casts this turn.",
+    content: "Reduce the value to 0 for the next damage spell your casts this turn.",
     cost: 1,
     time: 2,
     ability: {
@@ -139,7 +139,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Shield",
-    content: "Reduce the damage value by 1 for spells your opponent casts this turn.",
+    content: "Reduce the value by 1 for damage spells your opponent casts this turn.",
     cost: 2,
     time: 1,
     ability: {
@@ -188,7 +188,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Helm",
-    content: "Reduce the damage to 0 of spells your opponent casts next turn.",
+    content: "Reduce the value to 0 for damage spells your opponent casts next turn.",
     cost: 3,
     time: 4,
     ability: {
@@ -268,7 +268,7 @@ export const Deck: Card[] = [
   {
     id: "Steed",
     content:
-      "Reduce the time of your next spell by 3",
+      "Reduce the time by 3 for your next spell this turn.",
     cost: 1,
     time: 1,
     ability: {
@@ -411,7 +411,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Scepter",
-    content: "Increase the power of your next spell by 2.",
+    content: "Increase the value by 2 for your next spell this turn.",
     cost: 2,
     time: 2,
     ability: {
@@ -425,7 +425,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Wand",
-    content: "Increase the power of your spells this turn by 1.",
+    content: "Increase the value by 1 for your spells this turn.",
     cost: 1,
     time: 3,
     ability: {
@@ -465,7 +465,30 @@ export const Deck: Card[] = [
         numActivations: 1,
       }
     },
+  },
+  {
+    id: "River",
+    content: "Gain 1 health for each spell your opponent casts this turn.",
+    cost: 3,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.HEALTH,
+        value: 1,
+      },
+      trigger: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.NEXT_CARD,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      }
+    },
   }
+
 ];
 
 export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));

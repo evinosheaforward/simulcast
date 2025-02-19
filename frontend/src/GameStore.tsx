@@ -50,6 +50,7 @@ export const GameStoreBase = types
     hand: types.optional(types.array(CardModel), []),
     dropzone: types.optional(types.array(CardModel), []),
     opponentDropzone: types.optional(types.array(CardModel), []),
+    opponentPlayerId: types.optional(types.string, ""),
     gameStatus: types.optional(types.string, "waiting"),
     health: types.optional(types.number, Number.MIN_SAFE_INTEGER),
     opponentHealth: types.optional(types.number, Number.MIN_SAFE_INTEGER),
@@ -78,6 +79,9 @@ export const GameStoreBase = types
     },
     setPlayerId(newPlayerId: string) {
       self.playerId = newPlayerId;
+    },
+    setOpponentPlayerId(newPlayerId: string) {
+      self.opponentPlayerId = newPlayerId;
     },
     setHand(newHand: typeof self.hand) {
       console.log("new hand is:", JSON.stringify(newHand));
@@ -238,21 +242,28 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
       });
       self.setGameOver(false);
     });
-    self.socket.on("roundStart", (player: any) => {
-      console.log("roundStart", player);
-      if (player) {
-        self.setHand(player.hand);
-        self.setDropzone(player.dropzone);
-        self.setHealth(player.health);
-        self.setMana(player.mana);
-        self.setGoesFirst(player.goesFirst);
-        self.setOpponentHealth(player.opponentHealth);
-        self.setOpponentMana(player.opponentMana);
-      }
-      self.clearOpponentDropzone();
-      // todo refactor types to shared library
-      self.setGameStatus("PLAY");
-    });
+    self.socket.on("gameStart", (playerIds: any) => {
+      playerIds.forEach((pId: string) => {
+        if (pId != self.playerId) {
+          self.setOpponentPlayerId(pId);
+        }
+      });
+    }),
+      self.socket.on("roundStart", (player: any) => {
+        console.log("roundStart", player);
+        if (player) {
+          self.setHand(player.hand);
+          self.setDropzone(player.dropzone);
+          self.setHealth(player.health);
+          self.setMana(player.mana);
+          self.setGoesFirst(player.goesFirst);
+          self.setOpponentHealth(player.opponentHealth);
+          self.setOpponentMana(player.opponentMana);
+        }
+        self.clearOpponentDropzone();
+        // todo refactor types to shared library
+        self.setGameStatus("PLAY");
+      });
     self.socket.on("waitingForOpponent", () => {
       console.log("waitingForOpponent");
       self.setGameStatus("WAITING_FOR_OPPONENT");

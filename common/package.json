@@ -20,7 +20,8 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "class-validator": "^0.14.1"
+    "class-validator": "^0.14.1",
+    "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
