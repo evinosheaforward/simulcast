@@ -302,6 +302,7 @@ class RulesEngine {
       // -- put trigger in the queue --
       this.abilityQueue.add(activeCard, owningPlayer!);
       updateEvent.updateLog = `${activeCard.id} saved as passive ability`;
+      updateEvent.abilityQueue = this.abilityQueue.cardList();
     } else {
       // -- use ability now --
       let targetPlayer: Player;
@@ -454,6 +455,7 @@ class RulesEngine {
       io,
       this.gameId,
     );
+
     for (const { player, card } of triggeredOnExpire) {
       await this.useAbility(card, io, player, true);
     }
@@ -473,6 +475,14 @@ class RulesEngine {
 
 class AbilityQueue {
   abilities: ActiveAbility[] = [];
+
+  cardList() {
+    return this.abilities.map((c) => c.card.id);
+  }
+
+  map(fn: (ability: ActiveAbility) => any) {
+    return this.abilities.map(fn);
+  }
 
   add(card: Card, player: string) {
     this.abilities.push({
@@ -510,6 +520,7 @@ class AbilityQueue {
         i++;
       }
     }
+    await new FrontEndUpdate(null, null, null, this).send(io, gameId);
     return triggers;
   }
 
@@ -697,6 +708,7 @@ class FrontEndUpdate {
   dropzone: Map<string, Card[]> | null = null;
   health: Map<string, number> | null = null;
   mana: Map<string, number> | null = null;
+  abilityQueue: string[] = [];
   tickPlayer: string | null;
   updateLog: string = "";
 
@@ -704,6 +716,7 @@ class FrontEndUpdate {
     playerId: string | null,
     dropzone: Card[] | null = null,
     updateLog: string | null = null,
+    abilityQueue: AbilityQueue | null = null,
   ) {
     this.tickPlayer = playerId;
     if (dropzone) {
@@ -711,6 +724,9 @@ class FrontEndUpdate {
     }
     if (updateLog) {
       this.updateLog = updateLog;
+    }
+    if (abilityQueue) {
+      this.abilityQueue = abilityQueue.cardList();
     }
   }
 
@@ -741,6 +757,7 @@ class FrontEndUpdate {
       health: this.health != null ? [...this.health] : null,
       tick: this.tickPlayer,
       updateLog: this.updateLog,
+      abilityQueue: this.abilityQueue,
     };
   }
 

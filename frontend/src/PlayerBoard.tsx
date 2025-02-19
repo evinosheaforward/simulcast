@@ -7,7 +7,10 @@ import {
 } from "@dnd-kit/core";
 import { useObservable } from "mst-use-observable";
 
-import CardContainerComponent, { OpponentDropZone } from "./CardContainer";
+import CardContainerComponent, {
+  // AbilityQueue,
+  OpponentDropZone,
+} from "./CardContainer";
 import gameStore, { CardSnapshot } from "./GameStore";
 import GameOptions from "./GameStart";
 import { CardDragOverlayComponent } from "./Card";
@@ -114,7 +117,9 @@ const PlayerBoard: React.FC = () => {
       const { active } = event;
       console.log(`Drag Start event: ${active.id}`);
       const containerId = getContainer(active.id as string);
-      if (!containerId) return;
+      if (!containerId) {
+        return;
+      }
       const card = gameData
         .getZone(containerId)
         .find((c) => c.id === active.id);
@@ -187,14 +192,9 @@ const PlayerBoard: React.FC = () => {
         {/* Header */}
         <GameOptions />
 
-        <UpdateLog>
-          {gameData.updateLog.map((log) => (
-            <p>
-              {log}
-              <br />
-            </p>
-          ))}
-        </UpdateLog>
+        {/*<AbilityQueue />*/}
+
+        <UpdateLog />
 
         {/* Opponent Drop Zone */}
         <PlayerStats playerId={gameData.opponentPlayerId} isPlayer={false} />
@@ -214,8 +214,8 @@ const PlayerBoard: React.FC = () => {
         </div>
 
         {/* Player Drop Zone */}
+        {/* Not enough Mana overlay */}
         <div className="grid grid-cols-1 grid-rows-2 place-items-center">
-          {/* Not enough Mana overlay */}
           <div id="notEnoughMana">
             {showNotification && (
               <Notification
@@ -272,7 +272,7 @@ const PlayerStats: React.FC<{ playerId: string; isPlayer: boolean }> = ({
       <p id={isPlayer ? "playerDropzoneText" : "opponentDropzoneText"}>
         {gameData.gameStatus != "PLAY" &&
         gameData.tick &&
-        (gameData.tick === playerId) === isPlayer
+        (gameData.tick == playerId) == isPlayer
           ? "⏳"
           : "  "}{" "}
         <b>{playerId ? `${playerId}: ` : isPlayer ? "You: " : "Opponent: "}</b>

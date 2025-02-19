@@ -1,11 +1,12 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useObservable } from "mst-use-observable";
-import gameStore from "./GameStore";
+import gameStore, { Card } from "./GameStore";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 
 import CardComponent, { EmptyCard, CardFrameComponent } from "./Card";
+import { DeckMap } from "simulcast-common";
 
 interface CardContainerProps {
   id: string;
@@ -73,6 +74,29 @@ export const OpponentDropZone: React.FC = () => {
           )}
         </div>
       </section>
+    </div>
+  );
+};
+
+export const AbilityQueue: React.FC = () => {
+  const gameData = useObservable(gameStore);
+  return (
+    <div className="mb-1 mt-1 w-full scale-50">
+      {!gameData.abilityQueue.length ? (
+        <EmptyCard container="AbilityQueue" text="AbilityQueue" />
+      ) : (
+        gameData.abilityQueue.map((cardId) => (
+          <motion.div
+            key={`opponent ${cardId}`}
+            layout
+            whileHover={{ scale: 1.75, zIndex: 1000 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#8c3720] text-white shadow-md"
+          >
+            <CardFrameComponent card={DeckMap.get(cardId) as Card} />
+          </motion.div>
+        ))
+      )}
     </div>
   );
 };

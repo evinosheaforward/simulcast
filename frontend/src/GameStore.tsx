@@ -60,6 +60,7 @@ export const GameStoreBase = types
     gameOver: types.optional(types.boolean, false),
     tick: types.optional(types.maybeNull(types.string), null),
     updateLog: types.optional(types.array(types.string), []),
+    abilityQueue: types.optional(types.array(types.string), []),
     error: types.maybe(types.string),
   })
   .volatile((_) => ({
@@ -151,6 +152,9 @@ export const GameStoreBase = types
       } else {
         self.dropzone.replace(update);
       }
+    },
+    setAbilityQueue(abilityQueue: string[]) {
+      self.abilityQueue.replace(abilityQueue);
     },
   }));
 
@@ -323,6 +327,9 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
       }
       if (updateEvent.updateLog?.trim()) {
         self.setUpdateLog(updateEvent.updateLog);
+      }
+      if (updateEvent.abilityQueue?.length) {
+        self.setAbilityQueue(updateEvent.abilityQueue);
       }
     });
     self.socket.on("gameOver", (result: { winner: string }) => {

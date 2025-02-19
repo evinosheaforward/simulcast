@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useObservable } from "mst-use-observable";
+import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
+import gameStore from "./GameStore";
 
 interface NotificationProps {
   message: string;
@@ -26,20 +28,15 @@ export const Notification: React.FC<NotificationProps> = ({
   );
 };
 
-interface UpdateLogProps {
-  children: React.ReactNode;
-}
-
-export const UpdateLog: React.FC<UpdateLogProps> = ({ children }) => {
+export const UpdateLog: React.FC = () => {
+  const gameData = useObservable(gameStore);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [once, setOnce] = useState<boolean>(true);
 
   useEffect(() => {
-    if (once && scrollRef.current) {
+    if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      setOnce(false);
     }
-  }, [children, setOnce]); // Scroll to bottom when children change
+  }, [gameData]); // Scroll to bottom when children change
 
   return (
     <div className="grid justify-items-center items-center">
@@ -47,7 +44,12 @@ export const UpdateLog: React.FC<UpdateLogProps> = ({ children }) => {
         ref={scrollRef}
         className="w-full max-w-md justify-center text-center text-white border-gray-700 rounded text-bottom h-[98px] overflow-y-auto bg-gray-800 mb-2"
       >
-        {children}
+        {gameData.updateLog.map((log) => (
+          <p>
+            {log}
+            <br />
+          </p>
+        ))}
       </div>
     </div>
   );
