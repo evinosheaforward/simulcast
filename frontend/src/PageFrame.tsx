@@ -12,7 +12,7 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
   return (
     <>
       <head>
-        <link rel="icon" type="image/png" href="/images/Goblet.png" />
+        <link rel="icon" type="image/png" href="/images/Diamond.png" />
         <title>SimulCast</title>
       </head>
       <div className="min-h-screen bg-gradient-to-br from-gray-600 rounded-t to-black text-white">
@@ -25,7 +25,7 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
         </div>
 
         <div className="grid h-full overflow-y-auto place-items-center">
-          <div className="w-full max-w-4xl bg-gray-900 rounded-b shadow-xl gap-1">
+          <div className="w-full max-w-4xl bg-gray-900 rounded-b shadow-xl gap-1 mb-10">
             {children}
           </div>
         </div>

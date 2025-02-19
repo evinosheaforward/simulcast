@@ -22,7 +22,7 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({ id }) => {
           ref={setNodeRef}
           id={id}
           layout
-          className="h-[140px] w-full flex flex-shrink-0 justify-center touch-pan-x items-center p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm"
+          className="h-[140px] w-full flex flex-shrink-0 flex-wrap justify-center touch-pan-x items-center p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm"
         >
           <SortableContext
             items={gameData.getZone(id).map((card) => card.id) && [id]}
@@ -38,7 +38,7 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({ id }) => {
             ) : (
               <EmptyCard
                 container={id}
-                text={id === "dropzone" ? "Play your cards here" : "Your hand"}
+                text={id === "dropzone" ? "Your Board" : "Your hand"}
               />
             )}
           </SortableContext>
@@ -57,10 +57,7 @@ export const OpponentDropZone: React.FC = () => {
       <section>
         <div className="flex-shrink-0 flex h-[140px] w-full justify-center items-center flex-wrap p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm">
           {gameData.opponentDropzone.length === 0 ? (
-            <EmptyCard
-              container="opponentDropzone"
-              text="Your opponent's Play"
-            />
+            <EmptyCard container="opponentDropzone" text="Opponent Board" />
           ) : (
             gameData.opponentDropzone.map((card) => (
               <motion.div
@@ -68,7 +65,7 @@ export const OpponentDropZone: React.FC = () => {
                 layout
                 whileHover={{ scale: 1.75, zIndex: 1000 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#D35400] text-white shadow-md"
+                className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#8c3720] text-white shadow-md"
               >
                 <CardFrameComponent card={card} />
               </motion.div>

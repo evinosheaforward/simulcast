@@ -15,7 +15,7 @@ import { getSnapshot } from "mobx-state-tree";
 import { Notification, UpdateLog } from "./Utilities";
 import PageFrame from "./PageFrame";
 
-export const ROUND_DURATION = 15; // seconds
+export const ROUND_DURATION = 30; // seconds
 
 type ActiveCard = CardSnapshot | null;
 

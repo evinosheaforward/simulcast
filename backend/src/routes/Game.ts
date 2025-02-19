@@ -120,16 +120,8 @@ export function handleSocketConnection(io: Server, socket: Socket) {
       if (game.players.every((p) => p.submitted)) {
         game.state = GameState.RESOLUTION;
         console.log("roundSubmitted by both players");
-        console.log(
-          `Player: ${game.players[0].id} -- ${game.players[0].dropzone.toString()}`,
-        );
-        console.log(
-          `Player: ${game.players[1].id} -- ${game.players[1].dropzone.toString()}`,
-        );
         game.roundSubmitted(io);
-        console.log("wait 3 sec");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        console.log("done wait 3 sec");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         // updates scores here as well
         await game.resolveRound(io);
         // After resolution, reset submissions and deal new hands for the next round

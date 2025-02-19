@@ -37,7 +37,7 @@ export const UpdateLog: React.FC<UpdateLogProps> = ({ children }) => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [children]); // Scroll to bottom when children change
+  }, []); // Scroll to bottom when children change
 
   return (
     <div className="grid justify-items-center items-center">

@@ -14,7 +14,7 @@ export enum TargetTypes {
 export enum TargetSubTypes {
   SPELL_TIME = "SPELL_SPEED",
   SPELL_MANA = "SPELL_MANA",
-  PREVENTION = "PREVENTION",
+  SPELL_COUNTER = "SPELL_COUNTER",
 }
 
 export enum AbilityExpirations {
@@ -35,7 +35,7 @@ export enum Evaluation {
 
 export interface Condition {
   // expiration is for things like "next turn"
-  target: TargetTypes | "expiration";
+  type: TargetTypes | "expiration";
   subtype?: TargetSubTypes;
   eval: Evaluation;
   value?: number;
@@ -44,14 +44,17 @@ export interface Condition {
 export interface Ability {
   effect: {
     targetPlayer: PlayerTargets;
-    target: TargetTypes;
+    type: TargetTypes;
     subtype?: TargetSubTypes;
+    // used to make value negative
+    prevention?: boolean;
     value?: number;
     immediate?: boolean;
   };
   // when triggered, what condition to resolve
   trigger?: {
-    target?: TargetTypes;
+    type?: TargetTypes;
+    targetPlayer?: PlayerTargets;
     subtype?: TargetSubTypes | AbilityExpirations;
     expiresOnTrigger?: boolean;
   };
@@ -93,7 +96,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.MANA,
+        type: TargetTypes.MANA,
         value: 4,
         immediate: true,
       },
@@ -107,7 +110,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.MANA,
+        type: TargetTypes.MANA,
         value: 1,
         immediate: true,
       },
@@ -115,17 +118,17 @@ export const Deck: Card[] = [
   },
   {
     id: "Cloud",
-    content: "Prevent the next damage you would take this turn.",
+    content: "Reduce the value to 0 of the next damage spell your casts this turn.",
     cost: 1,
     time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DAMAGE,
-        subtype: TargetSubTypes.PREVENTION,
+        type: TargetTypes.DAMAGE,
+        prevention: true,
       },
       trigger: {
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
         expiresOnTrigger: true,
       },
       expiration: {
@@ -136,18 +139,18 @@ export const Deck: Card[] = [
   },
   {
     id: "Shield",
-    content: "Reduce damage you take from each spell by 1 this turn.",
+    content: "Reduce the damage value by 1 for spells your opponent casts this turn.",
     cost: 2,
     time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DAMAGE,
-        subtype: TargetSubTypes.PREVENTION,
+        type: TargetTypes.DAMAGE,
+        prevention: true,
         value: 1,
       },
       trigger: {
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
@@ -163,7 +166,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.MANA,
+        type: TargetTypes.MANA,
         value: 2,
         immediate: true,
       },
@@ -177,7 +180,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.HEALTH,
+        type: TargetTypes.HEALTH,
         value: 2,
         immediate: true,
       },
@@ -185,24 +188,24 @@ export const Deck: Card[] = [
   },
   {
     id: "Helm",
-    content: "Prevent all damage you would take next turn.",
+    content: "Reduce the damage to 0 of spells your opponent casts next turn.",
     cost: 3,
     time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DAMAGE,
-        subtype: TargetSubTypes.PREVENTION,
+        type: TargetTypes.DAMAGE,
+        prevention: true,
       },
       trigger: {
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
       },
       expiration: {
         numActivations: 2,
         type: AbilityExpirations.END_OF_ROUND,
       },
       condition: {
-        target: TargetTypes.EXPIRATION,
+        type: TargetTypes.EXPIRATION,
         eval: Evaluation.EQUAL,
         value: 1,
       },
@@ -216,11 +219,11 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.HEALTH,
+        type: TargetTypes.HEALTH,
         value: 2,
       },
       trigger: {
-        target: TargetTypes.EXPIRATION,
+        type: TargetTypes.EXPIRATION,
         subtype: AbilityExpirations.END_OF_ROUND,
       },
       expiration: {
@@ -228,7 +231,7 @@ export const Deck: Card[] = [
         type: AbilityExpirations.END_OF_ROUND,
       },
       condition: {
-        target: TargetTypes.EXPIRATION,
+        type: TargetTypes.EXPIRATION,
         eval: Evaluation.LESS,
         value: 3,
       },
@@ -242,7 +245,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
         value: 1,
         immediate: true,
       },
@@ -256,7 +259,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
         value: 3,
         immediate: true,
       },
@@ -271,9 +274,10 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.SPELL,
+        type: TargetTypes.SPELL,
         subtype: TargetSubTypes.SPELL_TIME,
-        value: -3,
+        value: 3,
+        prevention: true,
         immediate: true,
       },
     },
@@ -286,22 +290,23 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.MANA,
-        value: -2,
+        type: TargetTypes.MANA,
+        value: 2,
+        prevention: true,
         immediate: true,
       },
     },
   },
   {
     id: "Counter",
-    content: "Prevent the opponent's next spell from activating this turn.",
+    content: "Remove the opponent's left-most spell from the board.",
     cost: 2,
     time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.SPELL,
-        subtype: TargetSubTypes.PREVENTION,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_COUNTER,
         immediate: true,
       },
     },
@@ -314,7 +319,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.DRAW,
+        type: TargetTypes.DRAW,
         value: 2,
         immediate: true,
       },
@@ -328,7 +333,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.DRAW,
+        type: TargetTypes.DRAW,
         value: 1,
         immediate: true,
       },
@@ -342,7 +347,7 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DRAW,
+        type: TargetTypes.DRAW,
         value: 1,
         immediate: true,
       },
@@ -350,17 +355,17 @@ export const Deck: Card[] = [
   },
   {
     id: "Sword",
-    content: "Add 2 damage to your next damage spell this turn",
+    content: "Add 2 to the value of your next damage spell this turn",
     cost: 1,
     time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        target: TargetTypes.SPELL,
+        type: TargetTypes.SPELL,
         value: 2,
       },
       trigger: {
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
         expiresOnTrigger: true,
       },
       expiration: {
@@ -373,15 +378,15 @@ export const Deck: Card[] = [
     id: "Inferno",
     content: "After each of your opponent's spells activate this turn, they take 2 damage.",
     cost: 6,
-    time: 1,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
         value: 2,
       },
       trigger: {
-        target: TargetTypes.EXPIRATION,
+        type: TargetTypes.EXPIRATION,
         subtype: AbilityExpirations.NEXT_CARD,
       },
       expiration: {
@@ -398,15 +403,72 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        target: TargetTypes.DAMAGE,
+        type: TargetTypes.DAMAGE,
         value: 3,
         immediate: true,
       },
     },
   },
+  {
+    id: "Scepter",
+    content: "Increase the power of your next spell by 2.",
+    cost: 2,
+    time: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.SPELL,
+        value: 2,
+        immediate: true
+      },
+    },
+  },
+  {
+    id: "Wand",
+    content: "Increase the power of your spells this turn by 1.",
+    cost: 1,
+    time: 3,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.SPELL,
+        value: 1,
+      },
+      trigger: {
+        type: TargetTypes.SPELL,
+        expiresOnTrigger: true,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      },
+    },
+  },
+  {
+    id: "Bow",
+    content: "Deal 1 damage for each spell you cast this turn.",
+    cost: 2,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.DAMAGE,
+        value: 1,
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.NEXT_CARD,
+        targetPlayer: PlayerTargets.SELF,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      }
+    },
+  }
 ];
 
 export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));
-export function NewDeck() {
-  return [...Deck.map((c) => c.id)];
+export function NewDeck(cardsInHand: string[] = []) {
+  return [...Deck.map((c) => c.id).filter((cId) => !cardsInHand.includes(cId))];
 }

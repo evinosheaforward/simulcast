@@ -1,6 +1,11 @@
 import React from "react";
 import { CardFrameComponent } from "../Card";
-import { DeckMap, CARDS_PER_TURN, MANA_PER_TURN } from "simulcast-common";
+import {
+  DeckMap,
+  CARDS_PER_TURN,
+  MANA_PER_TURN,
+  TargetTypes,
+} from "simulcast-common";
 import { motion } from "framer-motion";
 import { CardSnapshot } from "../GameStore";
 import { ROUND_DURATION } from "../PlayerBoard";
@@ -38,7 +43,7 @@ export default function Root() {
                 layout
                 whileHover={{ scale: 1.75, zIndex: 1000 }}
                 whileTap={{ scale: 1.75, zIndex: 1000 }}
-                className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#7c644d] text-white shadow-md"
+                className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#564434] text-white shadow-md"
               >
                 <CardFrameComponent card={card as CardSnapshot} />
               </motion.div>
@@ -78,32 +83,34 @@ export default function Root() {
                 deterministic way.
               </li>
               <li>
-                During the round resolution cards Activate from{" "}
-                <b>Left to Right</b>.
+                During the round resolution cards Cast from <b>Left to Right</b>
+                .
               </li>
               <li>
                 Whoever goes first will have their Left-Most card "Tick-down"
                 (⏳ counts down).
               </li>
               <li>
-                While it's your "Tick", if your Left-Most card has a ⏳ of 0, it
-                Activates.
+                While it's your "Tick", if your Left-Most card has a ⏳ of 0,
+                you "Cast" that card.
               </li>
               <li>
-                If you have multiple cards with ⏳ of 0 in a row, they will
-                activate 1 after another.
+                If you have multiple cards with ⏳ of 0 in a row, they will cast
+                1 after another.
               </li>
               <li>
-                Whoever <b>did not</b> have the last card activation in the
-                round will go <b>First</b> in the next round.
+                Whoever <b>did not</b> have the last card cast in the round will
+                go <b>First</b> in the next round.
               </li>
               <li>
                 After each round, you will draw up to a hand-size of{" "}
-                {CARDS_PER_TURN} cards plus or minus any modifiers
+                {CARDS_PER_TURN} cards or you will draw 1 card if you have{" "}
+                {CARDS_PER_TURN} or more cards in hand - plus or minus any
+                modifiers - examples:
                 <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-2">
                   <li>
                     If you have {CARDS_PER_TURN} or more cards in hand and you
-                    will draw 0 cards.
+                    will draw 1 cards.
                   </li>
                   <li>
                     If you have {CARDS_PER_TURN - 1} cards in hand and have +1
@@ -116,6 +123,43 @@ export default function Root() {
                   <li>
                     If you have {CARDS_PER_TURN - 1} cards in hand and have -1
                     draw you will draw 0 cards.
+                  </li>
+                  <li>
+                    If you have {CARDS_PER_TURN - 2} cards in hand and have +1
+                    draw you will draw 3 cards.
+                  </li>
+                  <li>
+                    Card abilties and values:
+                    <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-2">
+                      <li>The number on a card is its "value".</li>
+                      <li>
+                        Cards have the following types:{" "}
+                        {Object.values(TargetTypes).join(", ")}
+                      </li>
+                      <li>
+                        Cards can affect the value of other cards. For example
+                        Cloud sets the value of the next damage spell your
+                        opponent Casts to 0.
+                      </li>
+                      <li>
+                        Some cards have effects that do not happen immediately.
+                        Those cards have "triggers" and "expirations".
+                        <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-4">
+                          <li>
+                            Cards with triggers have conditions on when they
+                            activate. For example, Sword will activate on any
+                            card that deals damage (this includes, e.g. Bow).
+                          </li>
+                          <li>
+                            Cards with triggers "expire". This means that thier
+                            effect lasts until a certain time. For example,
+                            cloud triggers on a damage card from the opponent.
+                            It expires when triggered, or at the end of the
+                            round if it doesn't trigger.
+                          </li>
+                        </ul>
+                      </li>
+                    </ul>
                   </li>
                 </ul>
               </li>

@@ -120,7 +120,7 @@ class Game {
           .map((p) => p.cost)
           .reduce((total, num) => total + num, 0);
       if (player.mana < 0) {
-        console.log("CHEATER???");
+        console.log("MANA CHEATER???");
         player.dropzone = [];
       }
       player.cardDraw = 0;
@@ -138,7 +138,7 @@ class Game {
   drawHand(delta: number = 0, playerId: string, currentHand: Card[]): Card[] {
     // HOW DOES CARD DRAW WORK?
     const drawCount = Math.max(
-      delta + Math.max(CARDS_PER_TURN - currentHand.length, 0),
+      delta + Math.max(CARDS_PER_TURN - currentHand.length, 1),
       0,
     );
     let array = this.decks.get(playerId)!;
@@ -146,8 +146,12 @@ class Game {
 
     for (let i = 0; i < drawCount; i++) {
       if (array.length === 0) {
-        this.decks.set(playerId, NewDeck());
+        this.decks.set(playerId, NewDeck(result));
         array = this.decks.get(playerId)!;
+        // while deck in hand
+        if (array.length === 0) {
+          break;
+        }
       }
       const randomIndex = Math.floor(Math.random() * array.length);
       result.push(array.splice(randomIndex, 1)[0]); // Remove the selected element
@@ -197,7 +201,9 @@ class RulesEngine {
     await this.sendActivePlayerUpdate(player1.id, io);
     try {
       let lastPlayer: string = player1.id;
+      // While cards remain in dropzone
       while (this.players.some((p) => p.dropzone.length > 0)) {
+        // cycle through player ticks
         for (const player of this.players) {
           lastPlayer = player.id;
           this.activePlayer = player.id;
@@ -214,6 +220,7 @@ class RulesEngine {
             // update if all we did is tick down
             await this.sendDropzoneUpdate(player, io);
           }
+          // While player's left-most card is at 0 timer
           while (
             player.dropzone.length !== 0 &&
             player.dropzone[0].timer != null &&
@@ -231,24 +238,16 @@ class RulesEngine {
                 (p) => p.id != lastPlayer,
               )[0].id;
             } else {
-              io.to(this.gameId).emit(
-                "resolveEvent",
-                new FrontEndUpdate(
-                  this.activePlayer!,
-                  player.dropzone,
-                  "card was somehow null?",
-                ).toObject(),
-              );
-              await new Promise((resolve) => setTimeout(resolve, 1000));
+              new FrontEndUpdate(
+                this.activePlayer!,
+                player.dropzone,
+                "card was somehow null?",
+              ).send(io, this.gameId);
             }
           }
         }
       }
-      await this.expireAbilities(
-        AbilityExpirations.END_OF_ROUND,
-        player1.id,
-        io,
-      );
+      await this.expireAbilities(AbilityExpirations.END_OF_ROUND, null, io);
     } catch (error) {
       if (error instanceof PlayerDiedError) {
         console.log(`Player died: ${error.playerId}`);
@@ -284,86 +283,116 @@ class RulesEngine {
       owningPlayer = this.activePlayer;
     }
     console.log(
-      `useAbility:\n  player: ${owningPlayer}\n  triggerd: ${triggered}\n  ability: ${JSON.stringify(activeCard.ability)}`,
+      `useAbility:\n  player: ${owningPlayer}\n  triggerd: ${triggered}\n  ability: ${JSON.stringify(activeCard.ability)}\n  targetCard: ${JSON.stringify(targetCard)}`,
     );
     let updateEvent = new FrontEndUpdate(this.activePlayer!);
-    if (activeCard.ability.effect.immediate || triggered) {
+
+    if (!activeCard.ability.effect.immediate && !triggered) {
+      // -- put trigger in the queue --
+      this.abilityQueue.add(activeCard, owningPlayer!);
+      updateEvent.updateLog = `${activeCard.id} saved as passive ability`;
+    } else {
+      // -- use ability now --
       let targetPlayer: Player;
       if (activeCard.ability.effect.targetPlayer === PlayerTargets.SELF) {
         targetPlayer = this.players.filter((p) => p.id === owningPlayer)[0];
       } else {
         targetPlayer = this.players.filter((p) => p.id !== owningPlayer)[0];
       }
-      switch (activeCard.ability.effect.target) {
-        case TargetTypes.DAMAGE:
-          switch (activeCard.ability.effect.subtype) {
-            case TargetSubTypes.PREVENTION:
-              if (activeCard.ability.effect.value) {
-                targetCard!.ability.effect.value! = Math.max(
-                  targetCard!.ability.effect.value! -
-                    activeCard.ability.effect.value,
-                  0,
-                );
-              } else {
-                targetCard!.ability.effect.value! = 0;
-              }
-              updateEvent.updateLog = `${activeCard.id} reduced the damage of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
-              break;
-            default:
-              targetPlayer.health -= activeCard.ability.effect.value!;
-              updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
-              updateEvent.updateLog = `${activeCard.id} dealt ${activeCard.ability.effect.value!} damage to ${targetPlayer.id}`;
-              break;
-          }
-          break;
-        case TargetTypes.HEALTH:
-          targetPlayer.health += activeCard.ability.effect.value!;
-          updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
-          updateEvent.updateLog = `${activeCard.id} healed ${activeCard.ability.effect.value!} to ${targetPlayer.id}`;
-          break;
-        case TargetTypes.DRAW:
-          targetPlayer.cardDraw = Math.max(
-            (targetPlayer.cardDraw += activeCard.ability.effect.value!),
+
+      let effectValue = activeCard.ability.effect.value;
+      if (effectValue) {
+        effectValue =
+          effectValue * (activeCard.ability.effect.prevention ? -1 : 1);
+      }
+
+      console.log(
+        `useAbility:\n  targetCard: ${targetCard}\n  targetPlayer: ${targetPlayer.id}`,
+      );
+      // apply effect to target Card - Note - we already know the trigger is valid
+      if (targetCard) {
+        // careful of 0!
+        if (effectValue != null) {
+          targetCard!.ability.effect.value! = Math.max(
+            effectValue + targetCard!.ability.effect.value!,
             0,
           );
-          updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} draw to ${targetPlayer.id}`;
-          break;
-        case TargetTypes.MANA:
-          targetPlayer.mana += activeCard.ability.effect.value!;
-          updateEvent.setMana(targetPlayer.id, targetPlayer.mana);
-          updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} mana to ${targetPlayer.id}`;
-          break;
-        case TargetTypes.SPELL:
-          switch (activeCard.ability.effect.subtype) {
-            case TargetSubTypes.PREVENTION:
-              // delete the card
-              let preventedCard = targetPlayer.dropzone.shift();
-              updateEvent.updateLog = `${activeCard.id} countered ${preventedCard ? preventedCard.id : "nothing"}`;
-              break;
-            case TargetSubTypes.SPELL_TIME:
-              // change time
-              if (targetPlayer.dropzone[0]) {
-                targetPlayer.dropzone[0].timer! = Math.max(
-                  targetPlayer.dropzone[0].timer! +
-                    activeCard.ability.effect.value!,
-                  0,
-                );
-                updateEvent.updateLog = `${activeCard.id} changed the time of ${targetPlayer.dropzone[0].id} by ${activeCard.ability.effect.value!}`;
-              }
-              break;
-            default:
-              console.log("SPELL TARGET card:", JSON.stringify(targetCard));
-              targetCard!.ability.effect.value! = Math.max(
-                targetCard!.ability.effect.value! +
-                  activeCard.ability.effect.value!,
-              );
-              updateEvent.updateLog = `${activeCard.id} changed the ${targetCard!.ability.effect.target} of ${targetCard!.id} by ${activeCard.ability.effect.value!}`;
-              break;
-          }
+        } else if (activeCard.ability.effect.prevention) {
+          // no effect.value for prevention => prevent all
+          targetCard!.ability.effect.value! = 0;
+        } else {
+          throw new Error(
+            "CARD MISCONFIGURED - no effect.value and not effect.prevention",
+          );
+        }
+        updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
+      } else {
+        // effect activates now, not on a card
+        switch (activeCard.ability.effect.type) {
+          case TargetTypes.DAMAGE:
+            // damage IS negative to health
+            targetPlayer.health -= effectValue!;
+            updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
+            updateEvent.updateLog = `${activeCard.id} dealt ${activeCard.ability.effect.value!} damage to ${targetPlayer.id}`;
+            break;
+          case TargetTypes.HEALTH:
+            targetPlayer.health += effectValue!;
+            updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
+            updateEvent.updateLog = `${activeCard.id} healed ${activeCard.ability.effect.value!} to ${targetPlayer.id}`;
+            break;
+          case TargetTypes.DRAW:
+            targetPlayer.cardDraw = Math.max(
+              (targetPlayer.cardDraw += effectValue!),
+              0,
+            );
+            updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} draw to ${targetPlayer.id}`;
+            break;
+          case TargetTypes.MANA:
+            targetPlayer.mana += effectValue!;
+            updateEvent.setMana(targetPlayer.id, targetPlayer.mana);
+            updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} mana to ${targetPlayer.id}`;
+            break;
+          case TargetTypes.SPELL:
+            switch (activeCard.ability.effect.subtype) {
+              case TargetSubTypes.SPELL_COUNTER:
+                // delete the card
+                let preventedCard = targetPlayer.dropzone.shift();
+                updateEvent.updateLog = `${activeCard.id} countered ${preventedCard ? preventedCard.id : "nothing"}`;
+                break;
+              case TargetSubTypes.SPELL_TIME:
+                // change time
+                if (targetPlayer.dropzone[0]) {
+                  targetPlayer.dropzone[0].timer! = Math.max(
+                    targetPlayer.dropzone[0].timer! + effectValue!,
+                    0,
+                  );
+                  updateEvent.updateLog = `${activeCard.id} changed the time of ${targetPlayer.dropzone[0].id} by ${effectValue!}`;
+                }
+                break;
+              default:
+                let targetCard = targetPlayer.dropzone[0];
+                console.log("SPELL TARGET card:", JSON.stringify(targetCard));
+                if (!targetCard) {
+                  updateEvent.updateLog = `${activeCard.id} did nothing because there is no card to target`;
+                } else if (!targetCard.ability.effect.value) {
+                  updateEvent.updateLog = `${activeCard.id} did nothing because ${targetCard.id} has no value to affect`;
+                } else {
+                  if (!activeCard.ability.effect.value) {
+                    targetCard.ability.effect.value = 0;
+                    console.log("SPELL WITH FULL NEGATION OF VALUE");
+                  } else {
+                    targetCard.ability.effect.value = Math.max(
+                      targetCard.ability.effect.value! + effectValue!,
+                      0,
+                    );
+                  }
+                  updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard.id} to ${targetCard.ability.effect.value}`;
+                }
+                break;
+            }
+            break;
+        }
       }
-    } else {
-      this.abilityQueue.add(activeCard, owningPlayer!);
-      updateEvent.updateLog = `${activeCard.id} saved as passive ability`;
     }
 
     this.players.forEach((p) => {
@@ -371,11 +400,6 @@ class RulesEngine {
     });
 
     await updateEvent.send(io, this.gameId);
-    console.log("sleep");
-    if (!triggered) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    } else {
-    }
 
     this.players.forEach((p) => {
       if (p.health <= 0) {
@@ -396,8 +420,7 @@ class RulesEngine {
       this.gameId,
     )) {
       if (
-        triggeredCard.ability.effect.target === TargetTypes.SPELL &&
-        triggeredCard.ability.effect.subtype === TargetSubTypes.PREVENTION
+        triggeredCard.ability.effect.subtype === TargetSubTypes.SPELL_COUNTER
       ) {
         resolves = false;
       } else {
@@ -410,7 +433,7 @@ class RulesEngine {
 
   async expireAbilities(
     expiration: AbilityExpirations,
-    player: string,
+    player: string | null,
     io: Server,
   ) {
     console.log(`expireAbilities - ${expiration.toString()}`);
@@ -481,7 +504,7 @@ class AbilityQueue {
 
   async expireAbilities(
     expiration: AbilityExpirations,
-    activePlayer: string,
+    activePlayer: string | null,
     io: Server,
     gameId: string,
   ) {
@@ -498,11 +521,21 @@ class AbilityQueue {
 
       // Expiration-type triggers
       if (
-        currentTrigger.ability.trigger!.target === TargetTypes.EXPIRATION &&
+        currentTrigger.ability.trigger!.type === TargetTypes.EXPIRATION &&
         currentTrigger.ability.trigger!.subtype === expiration &&
+        evalExpiration(
+          expiration,
+          owningPlayer,
+          activePlayer,
+          currentTrigger.ability.trigger?.targetPlayer
+            ? currentTrigger.ability.trigger.targetPlayer
+            : currentTrigger.ability.effect.targetPlayer,
+        ) &&
         evalCondition(currentTrigger.ability.condition, currentTrigger.ability)
       ) {
-        console.log(`${expiration} expiration triggered ${currentTrigger.id}`);
+        console.log(
+          `${expiration}: ${owningPlayer === activePlayer ? "SELF" : "OPPONENT"} expiration triggered ${currentTrigger.id}`,
+        );
         await new FrontEndUpdate(
           null,
           null,
@@ -547,7 +580,7 @@ class AbilityQueue {
       }
     }
     console.log(
-      `Triggered on expiration: ${expiration.toString()}:\n${JSON.stringify(triggers)}`,
+      `Triggered on expiration: ${expiration.toString()}: ${JSON.stringify(triggers)}`,
     );
     return triggers;
   }
@@ -556,18 +589,16 @@ class AbilityQueue {
 export function evalExpiration(
   expiration: AbilityExpirations,
   owningPlayer: string,
-  activePlayer: string,
+  activePlayer: string | null,
   targetPlayer: PlayerTargets,
 ) {
-  if (expiration !== AbilityExpirations.NEXT_CARD) {
+  if (expiration === AbilityExpirations.END_OF_ROUND) {
     return true;
-  } else if (targetPlayer === PlayerTargets.SELF) {
-    return owningPlayer == activePlayer;
-  } else if (targetPlayer === PlayerTargets.OPPONENT) {
-    return owningPlayer != activePlayer;
   } else {
-    console.log("evalExpiration reached IMPOSSIBLE conclusion");
-    return false;
+    console.log("NEXT_CARD evaling if it's self or other player");
+    return (
+      (targetPlayer === PlayerTargets.SELF) === (owningPlayer == activePlayer)
+    );
   }
 }
 
@@ -576,16 +607,21 @@ export function triggerMatches(
   activePlayer: string,
   currentTrigger: ActiveAbility,
 ) {
+  let targetPlayerType = currentTrigger.card.ability.trigger?.targetPlayer
+    ? currentTrigger.card.ability.trigger.targetPlayer
+    : currentTrigger.card.ability.effect.targetPlayer;
+
   if (
-    // player matches
-    ((currentTrigger.card.ability.effect.targetPlayer === PlayerTargets.SELF &&
-      currentTrigger.player === activePlayer) ||
-      (currentTrigger.card.ability.effect.targetPlayer ===
-        PlayerTargets.OPPONENT &&
-        currentTrigger.player !== activePlayer)) &&
-    // trigger matches
-    currentTrigger.card.ability.trigger?.target ===
-      activeCard.ability.effect.target &&
+    // SELF/OPPONENT matches
+    (targetPlayerType === PlayerTargets.SELF) ===
+      (currentTrigger.player === activePlayer) &&
+    // trigger type matches, or is spell
+    (currentTrigger.card.ability.trigger?.type === TargetTypes.SPELL ||
+      currentTrigger.card.ability.trigger?.type ===
+        activeCard.ability.effect.type) &&
+    // don't trigger on prevention spells
+    !activeCard.ability.effect.prevention &&
+    // if a trigger has a subtype, it must match
     (!currentTrigger.card.ability.trigger?.subtype ||
       currentTrigger.card.ability.trigger.subtype ===
         activeCard.ability.effect.subtype) &&
@@ -613,14 +649,14 @@ function evalCondition(
     JSON.stringify(card?.ability),
     JSON.stringify(trigger),
   );
-  if (condition == null) {
+  if (!condition) {
     return true;
   }
-  switch (condition.target) {
+  switch (condition.type) {
     case TargetTypes.SPELL:
       switch (condition.subtype) {
         case TargetSubTypes.SPELL_TIME:
-          target = card!.timer!;
+          target = card!.time;
         case TargetSubTypes.SPELL_MANA:
           target = card!.cost;
         default:
@@ -698,7 +734,6 @@ class FrontEndUpdate {
   }
 
   async send(io: Server, gameId: string) {
-    console.log("resolveEvent", JSON.stringify(this.toObject()));
     io.to(gameId).emit("resolveEvent", this.toObject());
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }

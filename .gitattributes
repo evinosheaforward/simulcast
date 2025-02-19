@@ -19,3 +19,6 @@ frontend/images/Tree.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Quill.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Shield.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Steed.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Bow.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Scepter.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Wand.png filter=lfs diff=lfs merge=lfs -text
