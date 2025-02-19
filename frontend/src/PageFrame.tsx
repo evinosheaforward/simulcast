@@ -25,7 +25,7 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
         </div>
 
         <div className="grid h-full overflow-y-auto place-items-center">
-          <div className="w-full max-w-4xl bg-gray-900 rounded-b shadow-xl gap-1 mb-10">
+          <div className="w-full max-w-4xl bg-gray-900 rounded-b shadow-xl gap-1 mb-24">
             {children}
           </div>
         </div>

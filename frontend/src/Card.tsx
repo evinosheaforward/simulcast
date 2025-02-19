@@ -77,9 +77,8 @@ export const CardDragOverlayComponent: React.FC<{ card: CardSnapshot }> = ({
         <motion.div
           layout
           className="flex items-center justify-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#8c3720] text-white shadow-lg"
-          // Animate overlay appearance with a slight scale effect
-          initial={{ scale: 0.95, opacity: 0.8 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ scale: 1.2, opacity: 0.8 }}
+          animate={{ scale: 1.75, opacity: 1, zIndex: 1000 }}
           exit={{ scale: 0.8, opacity: 0.8 }}
         >
           <CardFrameComponent card={card} />

@@ -22,7 +22,7 @@ export const Notification: React.FC<NotificationProps> = ({
       {"    "}
       {message}
     </span>,
-    document.getElementById("playerDropzoneText")!,
+    document.getElementById("notEnoughMana")!,
   );
 };
 

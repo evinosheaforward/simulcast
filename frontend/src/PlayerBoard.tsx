@@ -29,7 +29,7 @@ const PlayerBoard: React.FC = () => {
   useEffect(() => {
     if (gameData.gameId) {
       window.scrollTo({
-        top: document.body.scrollHeight,
+        top: 210,
         behavior: "smooth",
       });
     }
@@ -182,6 +182,7 @@ const PlayerBoard: React.FC = () => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
+        autoScroll={false}
       >
         {/* Header */}
         <GameOptions />
@@ -196,80 +197,35 @@ const PlayerBoard: React.FC = () => {
         </UpdateLog>
 
         {/* Opponent Drop Zone */}
-        <div className="text-center justify-center text-white">
-          <p>
-            {gameData.gameStatus != "PLAY" &&
-            gameData.tick != null &&
-            gameData.tick !== gameData.playerId
-              ? "⏳"
-              : "  "}
-            {""}
-            <b>
-              {gameData.opponentPlayerId
-                ? `${gameData.opponentPlayerId}: `
-                : "Opponent: "}
-            </b>
-            Health:{" "}
-            <span className="font-bold">
-              {gameData.opponentHealth === Number.MIN_SAFE_INTEGER
-                ? " "
-                : gameData.opponentHealth}
-            </span>
-            {"    /    "}
-            Mana:{" "}
-            <span className="font-bold">
-              {gameData.opponentMana === Number.MIN_SAFE_INTEGER
-                ? " "
-                : gameData.opponentMana}
-            </span>
-          </p>
-        </div>
+        <PlayerStats playerId={gameData.opponentPlayerId} isPlayer={false} />
         <OpponentDropZone key="opponentDropzone" />
 
         <div className="text-center justify-center text-white">
           <p className="mb-2 font-bold">
-            {gameData.gameOver
-              ? !gameData.gameId ||
-                gameData.gameStatus === "WAITING_FOR_OPPONENT"
-                ? "Game hasn't started"
-                : "Game over"
-              : gameData.goesFirst
-                ? "You go first this round"
-                : "Your opponent goes first this round"}
+            {!gameData.gameStatus ||
+            gameData.gameStatus === "WAITING_FOR_OPPONENT"
+              ? "Game hasn't started"
+              : gameData.gameOver
+                ? "Game over"
+                : gameData.goesFirst
+                  ? "You go first this round"
+                  : "Your opponent goes first this round"}
           </p>
         </div>
 
         {/* Player Drop Zone */}
-        <div className="text-center justify-center text-white">
-          <p id="playerDropzoneText">
-            {gameData.gameStatus != "PLAY" &&
-            gameData.tick === gameData.playerId
-              ? "⏳"
-              : "  "}{" "}
-            <b>{gameData.playerId ? `${gameData.playerId}: ` : "You: "}</b>
-            Health:{" "}
-            <span className="font-bold">
-              {gameData.health === Number.MIN_SAFE_INTEGER
-                ? " "
-                : gameData.health}
-            </span>
-            {"    /    "}
-            Mana:{" "}
-            <span className="font-bold">
-              {gameData.mana === Number.MIN_SAFE_INTEGER ? " " : gameData.mana}
-            </span>
-          </p>
-        </div>
-
-        {/* Not enough Mana overlay */}
-        <div>
-          {showNotification && (
-            <Notification
-              message={notificationText}
-              onClose={handleCloseNotification}
-              duration={2000} // Displays for 2 seconds
-            />
-          )}
+        <div className="grid grid-cols-1 grid-rows-2 place-items-center">
+          {/* Not enough Mana overlay */}
+          <div id="notEnoughMana">
+            {showNotification && (
+              <Notification
+                message={notificationText}
+                onClose={handleCloseNotification}
+                duration={2000} // Displays for 2 seconds
+              />
+            )}
+          </div>
+          <PlayerStats playerId={gameData.playerId} isPlayer={true} />
         </div>
 
         <CardContainerComponent id="dropzone" />
@@ -303,6 +259,46 @@ const PlayerBoard: React.FC = () => {
         {activeCard && <CardDragOverlayComponent card={activeCard} />}
       </DndContext>
     </PageFrame>
+  );
+};
+
+const PlayerStats: React.FC<{ playerId: string; isPlayer: boolean }> = ({
+  playerId,
+  isPlayer,
+}) => {
+  const gameData = useObservable(gameStore);
+  return (
+    <div className="text-center text-white">
+      <p id={isPlayer ? "playerDropzoneText" : "opponentDropzoneText"}>
+        {gameData.gameStatus != "PLAY" &&
+        gameData.tick &&
+        (gameData.tick === playerId) === isPlayer
+          ? "⏳"
+          : "  "}{" "}
+        <b>{playerId ? `${playerId}: ` : isPlayer ? "You: " : "Opponent: "}</b>
+        Health:{" "}
+        <span className="font-bold">
+          {isPlayer
+            ? gameData.health === Number.MIN_SAFE_INTEGER
+              ? " "
+              : gameData.health
+            : gameData.opponentHealth === Number.MIN_SAFE_INTEGER
+              ? " "
+              : gameData.opponentHealth}
+        </span>
+        {"    /    "}
+        Mana:{" "}
+        <span className="font-bold">
+          {isPlayer
+            ? gameData.mana === Number.MIN_SAFE_INTEGER
+              ? " "
+              : gameData.mana
+            : gameData.opponentMana === Number.MIN_SAFE_INTEGER
+              ? " "
+              : gameData.opponentMana}
+        </span>
+      </p>
+    </div>
   );
 };
 

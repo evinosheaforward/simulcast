@@ -173,12 +173,13 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
     }
     const [movedCard] = zoneItems.splice(currentIndex, 1);
 
-    if (targetIndex < 0 || targetIndex > zoneItems.length) {
+    if (targetIndex < 0 || targetIndex >= zoneItems.length) {
       targetIndex = zoneItems.length;
     }
     zoneItems.splice(targetIndex, 0, movedCard);
     self.setZone(zone, zoneItems as typeof self.hand);
   },
+
   moveCardBetweenZones(
     sourceZone: string,
     targetZone: string,
@@ -204,7 +205,7 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
     if (
       targetIndex === undefined ||
       targetIndex < 0 ||
-      targetIndex >= targetItems.length
+      targetIndex >= targetItems.length - 1
     ) {
       // If no target index is provided or it's out-of-range, push to the end.
       targetItems.push(movedCard);

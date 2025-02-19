@@ -18,8 +18,8 @@ const GameOptions: React.FC = () => {
   };
 
   return (
-    <div className="items-center justify-center p-1 grid auto-rows-auto gap-1">
-      <div className="justify-center">
+    <div className="items-center justify-center p-1 grid auto-rows-auto gap-1 place-items-center">
+      <div>
         <button
           onClick={handleCreateGame}
           className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 sm:px-1 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
@@ -27,7 +27,7 @@ const GameOptions: React.FC = () => {
           Create New Game
         </button>
       </div>
-      <div className="justify-center">
+      <div>
         <button
           onClick={handleJoinGame}
           className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
@@ -35,7 +35,7 @@ const GameOptions: React.FC = () => {
           Join Game
         </button>
       </div>
-      <div className="justify-center">
+      <div>
         <input
           type="text"
           placeholder="Game ID to Join"
@@ -45,11 +45,11 @@ const GameOptions: React.FC = () => {
         />
       </div>
 
-      <div className="justify-center text-center text-white grid grid-rows-2 gap-1">
+      <div className="text-center text-white grid grid-rows-1 m-1">
         {gameData.gameId ? (
           <>
-            <div>Connected to game:</div>
             <div>
+              Connected to game:{" "}
               <span className="font-bold">{gameData.gameId}</span>
             </div>
           </>
@@ -58,7 +58,6 @@ const GameOptions: React.FC = () => {
             <div>
               <p>Not connected to a game.</p>
             </div>
-            <div></div>
           </>
         )}
       </div>
