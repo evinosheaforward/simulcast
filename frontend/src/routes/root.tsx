@@ -1,15 +1,13 @@
 import React from "react";
-import { CardFrameComponent } from "../Card";
+import { PlayerCardFrameComponent } from "../Card";
 import {
   DeckMap,
   CARDS_PER_TURN,
   MANA_PER_TURN,
   TargetTypes,
 } from "simulcast-common";
-import { motion } from "framer-motion";
 import { CardSnapshot } from "../GameStore";
 import { ROUND_DURATION } from "../PlayerBoard";
-import PageFrame from "../PageFrame";
 
 export default function Root() {
   // Sort cards alphabetically by ID
@@ -18,7 +16,7 @@ export default function Root() {
   );
 
   return (
-    <PageFrame>
+    <>
       <div className="items-center justify-center p-2 grid gap-1">
         <div className="place-items-center text-center">
           <a
@@ -39,14 +37,10 @@ export default function Root() {
         <div className="place-items-center w-full p-6 border border-gray-700 rounded bg-gray-800 shadow-xl">
           <div className="w-full place-items-center gap-2 grid grid-cols-[repeat(auto-fit,80px)] justify-center">
             {sortedDeck.map((card) => (
-              <motion.div
-                layout
-                whileHover={{ scale: 1.75, zIndex: 1000 }}
-                whileTap={{ scale: 1.75, zIndex: 1000 }}
-                className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#564434] text-white shadow-md"
-              >
-                <CardFrameComponent card={card as CardSnapshot} />
-              </motion.div>
+              <PlayerCardFrameComponent
+                key={card.id}
+                card={card as CardSnapshot}
+              />
             ))}
           </div>
         </div>
@@ -128,36 +122,38 @@ export default function Root() {
                     If you have {CARDS_PER_TURN - 2} cards in hand and have +1
                     draw you will draw 3 cards.
                   </li>
+                </ul>
+              </li>
+              <li>
+                Card abilties and values:
+                <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-2">
+                  <li>The number on a card is its "value".</li>
                   <li>
-                    Card abilties and values:
-                    <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-2">
-                      <li>The number on a card is its "value".</li>
+                    Cards have the following types:{" "}
+                    {Object.values(TargetTypes)
+                      .filter((t) => t != TargetTypes.EXPIRATION)
+                      .join(", ")}
+                  </li>
+                  <li>
+                    Cards can affect the value of other cards. For example Cloud
+                    sets the value of the next damage spell your opponent Casts
+                    to 0.
+                  </li>
+                  <li>
+                    Some cards have effects that do not happen immediately.
+                    Those cards have "triggers" and "expirations".
+                    <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-4">
                       <li>
-                        Cards have the following types:{" "}
-                        {Object.values(TargetTypes).join(", ")}
+                        Cards with triggers have conditions on when they
+                        activate. For example, Sword will activate on any card
+                        that deals damage (this includes, e.g. Bow).
                       </li>
                       <li>
-                        Cards can affect the value of other cards. For example
-                        Cloud sets the value of the next damage spell your
-                        opponent Casts to 0.
-                      </li>
-                      <li>
-                        Some cards have effects that do not happen immediately.
-                        Those cards have "triggers" and "expirations".
-                        <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-4">
-                          <li>
-                            Cards with triggers have conditions on when they
-                            activate. For example, Sword will activate on any
-                            card that deals damage (this includes, e.g. Bow).
-                          </li>
-                          <li>
-                            Cards with triggers "expire". This means that their
-                            effect lasts until a certain time. For example,
-                            cloud triggers on a damage card from the opponent.
-                            It expires when triggered, or at the end of the
-                            round if it doesn't trigger.
-                          </li>
-                        </ul>
+                        Cards with triggers "expire". This means that their
+                        effect lasts until a certain time. For example, cloud
+                        triggers on a damage card from the opponent. It expires
+                        when triggered, or at the end of the round if it doesn't
+                        trigger.
                       </li>
                     </ul>
                   </li>
@@ -173,6 +169,6 @@ export default function Root() {
       <footer className="text-white py-4 text-center">
         <p>SimulCast</p>
       </footer>
-    </PageFrame>
+    </>
   );
 }

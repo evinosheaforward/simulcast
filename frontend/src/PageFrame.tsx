@@ -11,10 +11,6 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
 
   return (
     <>
-      <head>
-        <link rel="icon" type="image/png" href="/images/Diamond.png" />
-        <title>SimulCast</title>
-      </head>
       <div className="min-h-screen bg-gradient-to-br from-gray-600 rounded-t to-black text-white">
         <div className="grid place-items-center text-center text-white rounded-lg">
           <header className="w-full max-w-4xl bg-gray-900 place-items-center text-white py-4 shadow-xl">

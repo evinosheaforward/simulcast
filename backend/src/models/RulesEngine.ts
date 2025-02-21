@@ -133,6 +133,7 @@ class Game {
     this.players.forEach((p) => {
       endRoundUpdate.setDropzone(p.id, p.dropzone);
     });
+    endRoundUpdate.abilityQueue = this.rulesEngine.abilityQueue.cardList();
     endRoundUpdate.send(io, this.rulesEngine.gameId);
     console.log("RESOLVE ROUND OVER");
   }
@@ -323,21 +324,50 @@ class RulesEngine {
       );
       // apply effect to target Card - Note - we already know the trigger is valid
       if (targetCard) {
-        // careful of 0!
-        if (effectValue != null) {
-          targetCard!.ability.effect.value! = Math.max(
-            effectValue + targetCard!.ability.effect.value!,
-            0,
-          );
-        } else if (activeCard.ability.effect.prevention) {
-          // no effect.value for prevention => prevent all
-          targetCard!.ability.effect.value! = 0;
-        } else {
-          throw new Error(
-            "CARD MISCONFIGURED - no effect.value and not effect.prevention",
-          );
+        switch (activeCard.ability.effect.subtype) {
+          case TargetSubTypes.SPELL_TYPE:
+            if (activeCard.ability.effect.spellChange?.type) {
+              targetCard.ability.effect.type =
+                activeCard.ability.effect.spellChange.type;
+              updateEvent.updateLog += `${activeCard.id} changed the type of ${targetCard!.id} to ${targetCard!.ability.effect.type}`;
+            }
+            if (
+              activeCard.ability.effect.spellChange?.targetPlayer &&
+              targetCard.ability.effect.targetPlayer !=
+                activeCard.ability.effect.spellChange!.targetPlayer
+            ) {
+              targetCard.ability.effect.targetPlayer =
+                activeCard.ability.effect.spellChange!.targetPlayer;
+              updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${targetCard!.id} to ${targetCard!.ability.effect.type}`;
+            }
+            if (
+              activeCard.ability.effect.spellChange?.value &&
+              targetCard.ability.effect.value !=
+                activeCard.ability.effect.spellChange.value
+            ) {
+              targetCard.ability.effect.value =
+                activeCard.ability.effect.spellChange.value;
+              updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${targetCard!.id} to ${targetCard.ability.effect.value}`;
+            }
+            break;
+          default:
+            // careful of 0!
+            if (effectValue != null) {
+              targetCard!.ability.effect.value! = Math.max(
+                effectValue + targetCard!.ability.effect.value!,
+                0,
+              );
+            } else if (activeCard.ability.effect.prevention) {
+              // no effect.value for prevention => prevent all
+              targetCard!.ability.effect.value! = 0;
+            } else {
+              throw new Error(
+                "CARD MISCONFIGURED - no effect.value and not effect.prevention",
+              );
+            }
+            updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
+            break;
         }
-        updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
       } else {
         // effect activates now, not on a card
         switch (activeCard.ability.effect.type) {
@@ -381,6 +411,17 @@ class RulesEngine {
                   updateEvent.updateLog = `${activeCard.id} changed the time of ${targetPlayer.dropzone[0].id} by ${effectValue!}`;
                 }
                 break;
+              case TargetSubTypes.SPELL_TYPE:
+                // change time
+                if (targetPlayer.dropzone[0]) {
+                  targetPlayer.dropzone[0].timer! = Math.max(
+                    targetPlayer.dropzone[0].timer! + effectValue!,
+                    0,
+                  );
+                  updateEvent.updateLog = `${activeCard.id} changed the time of ${targetPlayer.dropzone[0].id} by ${effectValue!}`;
+                }
+                break;
+
               default:
                 let targetCard = targetPlayer.dropzone[0];
                 console.log("SPELL TARGET card:", JSON.stringify(targetCard));
@@ -465,11 +506,12 @@ class RulesEngine {
     await new FrontEndUpdate(this.activePlayer!, player.dropzone).send(
       io,
       this.gameId,
+      200,
     );
   }
 
   async sendActivePlayerUpdate(playerId: string, io: Server) {
-    await new FrontEndUpdate(playerId).send(io, this.gameId);
+    await new FrontEndUpdate(playerId).send(io, this.gameId, 800);
   }
 }
 
@@ -477,7 +519,10 @@ class AbilityQueue {
   abilities: ActiveAbility[] = [];
 
   cardList() {
-    return this.abilities.map((c) => c.card.id);
+    return this.abilities.map((c) => ({
+      cardId: c.card.id,
+      playerId: c.player,
+    }));
   }
 
   map(fn: (ability: ActiveAbility) => any) {
@@ -506,10 +551,10 @@ class AbilityQueue {
     while (i < this.abilities.length) {
       if (triggerMatches(card, activePlayer, this.abilities[i])) {
         await new FrontEndUpdate(
-          null,
+          activePlayer,
           null,
           `${this.abilities[i].card.id} triggered`,
-        ).send(io, gameId);
+        ).send(io, gameId, 300);
         if (this.abilities[i].card.ability.trigger?.expiresOnTrigger) {
           triggers.push(this.abilities.splice(i, 1)[0]);
         } else {
@@ -520,7 +565,11 @@ class AbilityQueue {
         i++;
       }
     }
-    await new FrontEndUpdate(null, null, null, this).send(io, gameId);
+    await new FrontEndUpdate(activePlayer, null, null, this).send(
+      io,
+      gameId,
+      200,
+    );
     return triggers;
   }
 
@@ -559,10 +608,10 @@ class AbilityQueue {
           `${expiration}: ${owningPlayer === activePlayer ? "SELF" : "OPPONENT"} expiration triggered ${currentTrigger.id}`,
         );
         await new FrontEndUpdate(
-          null,
+          activePlayer,
           null,
           `${currentTrigger.id} triggered`,
-        ).send(io, gameId);
+        ).send(io, gameId, 100);
         triggers.push(this.abilities[i]);
       }
 
@@ -582,17 +631,17 @@ class AbilityQueue {
           if (currentTrigger.ability.expiration?.triggerOnExpiration) {
             triggers.push(this.abilities.splice(i, 1)[0]);
             await new FrontEndUpdate(
-              null,
+              activePlayer,
               null,
               `${currentTrigger.id} triggered and expired`,
-            ).send(io, gameId);
+            ).send(io, gameId, 200);
           } else {
             this.abilities.splice(i, 1);
             await new FrontEndUpdate(
-              null,
+              activePlayer,
               null,
               `${currentTrigger.id} expired`,
-            ).send(io, gameId);
+            ).send(io, gameId, 100);
           }
         } else {
           i++;
@@ -708,7 +757,7 @@ class FrontEndUpdate {
   dropzone: Map<string, Card[]> | null = null;
   health: Map<string, number> | null = null;
   mana: Map<string, number> | null = null;
-  abilityQueue: string[] = [];
+  abilityQueue: { cardId: string; playerId: string }[] | null = null;
   tickPlayer: string | null;
   updateLog: string = "";
 
@@ -761,9 +810,10 @@ class FrontEndUpdate {
     };
   }
 
-  async send(io: Server, gameId: string) {
+  async send(io: Server, gameId: string, wait: number = 1000) {
+    console.log(`UPDATE EVENT: ${JSON.stringify(this.toObject())}`);
     io.to(gameId).emit("resolveEvent", this.toObject());
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, wait));
   }
 }
 

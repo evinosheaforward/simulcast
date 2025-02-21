@@ -7,6 +7,7 @@ import "./index.css";
 import PlayerBoard from "./PlayerBoard";
 import Root from "./routes/root";
 import ErrorPage from "./error-page";
+import PageFrame from "./PageFrame";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,12 @@ if (!container) {
 
 ReactDOM.createRoot(container).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <head>
+      <link rel="icon" type="image/png" href="/images/Diamond.png" />
+      <title>SimulCast</title>
+    </head>
+    <PageFrame>
+      <RouterProvider router={router} />
+    </PageFrame>
   </React.StrictMode>,
 );

@@ -39,13 +39,14 @@ export const UpdateLog: React.FC = () => {
   }, [gameData]); // Scroll to bottom when children change
 
   return (
-    <div className="grid justify-items-center items-center">
+    <div className="grid justify-items-center items-center mt-2 mb-2">
       <div
         ref={scrollRef}
-        className="w-full max-w-md justify-center text-center text-white border-gray-700 rounded text-bottom h-[98px] overflow-y-auto bg-gray-800 mb-2"
+        className="w-full max-w-md justify-center text-center text-white border-gray-700 rounded align-bottom h-[98px] overflow-y-auto bg-gray-800"
       >
-        {gameData.updateLog.map((log) => (
-          <p>
+        <p key="init">Game Log</p>
+        {gameData.updateLog.map((log, index) => (
+          <p key={index.toString()}>
             {log}
             <br />
           </p>

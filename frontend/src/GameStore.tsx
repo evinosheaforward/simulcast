@@ -5,6 +5,7 @@ import {
   flow,
   Instance,
   SnapshotOut,
+  detach,
 } from "mobx-state-tree";
 import { io, Socket } from "socket.io-client";
 
@@ -43,6 +44,11 @@ export const CardArrayModel = types.optional(types.array(CardModel), []);
 export type Card = Instance<typeof CardModel>;
 export type CardSnapshot = SnapshotOut<typeof CardModel>;
 
+export const AbilityQueueItemModel = types.model("AbilityQueueItem", {
+  cardId: types.string,
+  playerId: types.string,
+});
+
 export const GameStoreBase = types
   .model("GameStore", {
     gameId: types.optional(types.string, ""),
@@ -60,7 +66,7 @@ export const GameStoreBase = types
     gameOver: types.optional(types.boolean, false),
     tick: types.optional(types.maybeNull(types.string), null),
     updateLog: types.optional(types.array(types.string), []),
-    abilityQueue: types.optional(types.array(types.string), []),
+    abilityQueue: types.optional(types.array(AbilityQueueItemModel), []),
     error: types.maybe(types.string),
   })
   .volatile((_) => ({
@@ -153,7 +159,7 @@ export const GameStoreBase = types
         self.dropzone.replace(update);
       }
     },
-    setAbilityQueue(abilityQueue: string[]) {
+    setAbilityQueue(abilityQueue: { cardId: string; playerId: string }[]) {
       self.abilityQueue.replace(abilityQueue);
     },
   }));
@@ -175,9 +181,11 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
         targetIndex = zoneItems.length;
       }
     }
-    const [movedCard] = zoneItems.splice(currentIndex, 1);
+    let [movedCard] = zoneItems.splice(currentIndex, 1);
 
-    if (targetIndex < 0 || targetIndex >= zoneItems.length) {
+    if (targetIndex < 0) {
+      targetIndex = 0;
+    } else if (targetIndex >= zoneItems.length) {
       targetIndex = zoneItems.length;
     }
     zoneItems.splice(targetIndex, 0, movedCard);
@@ -201,7 +209,7 @@ const GameStoreReorderable = GameStoreBase.actions((self) => ({
       return;
     }
     const movedCard = CardModel.create(
-      getSnapshot(sourceItems.splice(sourceIndex, 1)[0]),
+      getSnapshot(detach(sourceItems[sourceIndex])),
     );
 
     let targetIndex = targetItems.findIndex((card) => card.id === overCardId);
@@ -328,7 +336,7 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
       if (updateEvent.updateLog?.trim()) {
         self.setUpdateLog(updateEvent.updateLog);
       }
-      if (updateEvent.abilityQueue?.length) {
+      if (updateEvent.abilityQueue != null) {
         self.setAbilityQueue(updateEvent.abilityQueue);
       }
     });

@@ -15,6 +15,7 @@ export enum TargetSubTypes {
   SPELL_TIME = "SPELL_SPEED",
   SPELL_MANA = "SPELL_MANA",
   SPELL_COUNTER = "SPELL_COUNTER",
+  SPELL_TYPE = "SPELL_TYPE",
 }
 
 export enum AbilityExpirations {
@@ -49,18 +50,24 @@ export interface Ability {
     // used to make value negative
     prevention?: boolean;
     value?: number;
+    spellChange?: {
+      targetPlayer: PlayerTargets;
+      type: TargetTypes;
+      value?: number;
+    }
     immediate?: boolean;
   };
   // when triggered, what condition to resolve
   trigger?: {
     type?: TargetTypes;
+    // trigger target player is about who _owns_ the spell, not who the spell targets
     targetPlayer?: PlayerTargets;
     subtype?: TargetSubTypes | AbilityExpirations;
     expiresOnTrigger?: boolean;
   };
   expiration?: {
     type: AbilityExpirations;
-    // Trigger when the numActivations = 0
+    // Trigger when the numActivations = -1
     triggerOnExpiration?: boolean;
     numActivations: number;
   };
@@ -327,15 +334,28 @@ export const Deck: Card[] = [
   },
 {
     id: "Quill",
-    content: "Draw 1 more cards next turn",
+    content: "Convert your next healing spell this turn to a card-draw spell.",
     cost: 2,
     time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
-        type: TargetTypes.DRAW,
-        value: 1,
-        immediate: true,
+        type: TargetTypes.SPELL,
+        subtype:  TargetSubTypes.SPELL_TYPE,
+        spellChange: {
+          targetPlayer: PlayerTargets.SELF,
+          type: TargetTypes.DRAW,
+        },
+      },
+      trigger: {
+        type: TargetTypes.DAMAGE,
+        targetPlayer: PlayerTargets.SELF,
+        expiresOnTrigger: true
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+        triggerOnExpiration: false
       },
     },
   },
@@ -487,7 +507,216 @@ export const Deck: Card[] = [
         numActivations: 1,
       }
     },
-  }
+  },
+  {
+    id: "Torch",
+    content: "At the end of the next round, draw 3 cards.",
+    cost: 3,
+    time: 3,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.DRAW,
+        value: 3
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND 
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 2, 
+        triggerOnExpiration: true
+      },
+      condition: {
+        type: TargetTypes.EXPIRATION,
+        eval: Evaluation.EQUAL,
+        value: 1
+      }
+    }
+  },
+{
+    id: "Shatter",
+    content: "Decrease the opponent's next spell value by 2 this turn.",
+    cost: 2,
+    time: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        value: 2,
+        prevention: true
+      },
+      trigger: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        expiresOnTrigger: true,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1
+      }
+    }
+  },
+{
+    id: "Alchemy",
+    content: "Convert your next damage spell this turn to a mana spell.",
+    cost: 2,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.SPELL,
+        subtype:  TargetSubTypes.SPELL_TYPE,
+        spellChange: {
+          targetPlayer: PlayerTargets.SELF,
+          type: TargetTypes.MANA,
+        },
+      },
+      trigger: {
+        type: TargetTypes.DAMAGE,
+        targetPlayer: PlayerTargets.SELF,
+        expiresOnTrigger: true
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+        triggerOnExpiration: false
+      },
+    }
+  },
+{
+    id: "Hex",
+    content: "Change your opponents health spells to self-damage spells this turn.",
+    cost: 5,
+    time: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_TYPE,
+        spellChange: {
+          targetPlayer: PlayerTargets.OPPONENT,
+          type: TargetTypes.DAMAGE
+        },
+      },
+      trigger: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.HEALTH,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1
+      }
+    }
+  },
+{
+    id: "Bloom",
+    content: "Gain 1 health whenever you cast a spell this turn (including this one).",
+    cost: 1,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.HEALTH,
+        value: 1
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.NEXT_CARD,
+        targetPlayer: PlayerTargets.SELF
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1
+      }
+    }
+  },
+  /* ------- NEW CARD NEED ART ---------- //
+  {
+    id: "Vortex",
+    content: "You lose 2 mana.",
+    cost: 0,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.MANA,
+        value: 2,
+        prevention: true,
+        immediate: true,
+      }
+    }
+  },
+  
+  
+  {
+    id: "Curse",
+    content: "Deal 2 damage to your opponent at the end of the next three rounds to your opponent.",
+    cost: 4,
+    time: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.DAMAGE,
+        value: 2
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 4
+      },
+      condition: {
+        type: TargetTypes.EXPIRATION,
+        eval: Evaluation.LESS,
+        value: 4
+      }
+    }
+  },
+  
+  
+  */
+
+
+  /* Card ideas:
+    - devestation: remove all cards from the board? 4/6
+    - well
+    - crypt
+    - might
+    - lake
+    - death
+    - virus
+    - bird
+    - harp
+    - meat
+  {
+    "id": "Mirror",
+    "content": "Copy the effect of the opponent's current left-most spell to your board in the left-most slot.",
+    "cost": 3,
+    "time": 2,
+    "ability": {
+      "effect": {
+        "targetPlayer": "SELF",
+        "type": "SPELL",
+        "subtype": "SPELL_COPY", // We can repurpose SPELL_COUNTER or define a new subtype
+        "spellPosition": "0", // We can repurpose SPELL_COUNTER or define a new subtype
+        "immediate": true
+      },
+      "trigger": {
+        "type": "SPELL",          // Trigger on the last played spell
+        "targetPlayer": "OPPONENT",
+        "expiresOnTrigger": true
+      },
+      "expiration": {
+        "type": "END_OF_ROUND",
+        "numActivations": 1
+      }
+    }
+  },
+  */
 
 ];
 

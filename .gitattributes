@@ -22,3 +22,10 @@ frontend/images/Steed.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Bow.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Scepter.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Wand.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/River.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Shatter.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Torch.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Alchemy.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Bloom.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Hex.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Oct.png filter=lfs diff=lfs merge=lfs -text

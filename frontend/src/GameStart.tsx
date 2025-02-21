@@ -1,10 +1,8 @@
 // Example UI Component: GameOptions.tsx
 import React, { useState } from "react";
 import gameStore from "./GameStore";
-import { useObservable } from "mst-use-observable";
 
 const GameOptions: React.FC = () => {
-  const gameData = useObservable(gameStore);
   const [joinGameId, setJoinGameId] = useState("");
 
   const handleCreateGame = () => {
@@ -43,23 +41,6 @@ const GameOptions: React.FC = () => {
           onChange={(e) => setJoinGameId(e.target.value)}
           className="flex-none w-50 bg-gray-700 text-center text-white border border-gray-600 rounded py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
         />
-      </div>
-
-      <div className="text-center text-white grid grid-rows-1 m-1">
-        {gameData.gameId ? (
-          <>
-            <div>
-              Connected to game:{" "}
-              <span className="font-bold">{gameData.gameId}</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              <p>Not connected to a game.</p>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );

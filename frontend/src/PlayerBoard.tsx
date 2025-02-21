@@ -8,7 +8,7 @@ import {
 import { useObservable } from "mst-use-observable";
 
 import CardContainerComponent, {
-  // AbilityQueue,
+  AbilityQueue,
   OpponentDropZone,
 } from "./CardContainer";
 import gameStore, { CardSnapshot } from "./GameStore";
@@ -16,7 +16,6 @@ import GameOptions from "./GameStart";
 import { CardDragOverlayComponent } from "./Card";
 import { getSnapshot } from "mobx-state-tree";
 import { Notification, UpdateLog } from "./Utilities";
-import PageFrame from "./PageFrame";
 
 export const ROUND_DURATION = 30; // seconds
 
@@ -32,7 +31,7 @@ const PlayerBoard: React.FC = () => {
   useEffect(() => {
     if (gameData.gameId) {
       window.scrollTo({
-        top: 210,
+        top: 324,
         behavior: "smooth",
       });
     }
@@ -181,84 +180,105 @@ const PlayerBoard: React.FC = () => {
   };
 
   return (
-    <PageFrame>
-      <DndContext
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-        autoScroll={false}
-      >
-        {/* Header */}
-        <GameOptions />
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+      autoScroll={false}
+    >
+      {/* Header */}
+      <GameOptions />
 
-        {/*<AbilityQueue />*/}
+      <UpdateLog />
+      <div className="text-center text-white grid grid-rows-1 m-1">
+        {gameData.gameId ? (
+          <>
+            <div>
+              Connected to game:{" "}
+              <span className="font-bold">{gameData.gameId}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <p>Not connected to a game.</p>
+            </div>
+          </>
+        )}
+      </div>
+      <AbilityQueue />
 
-        <UpdateLog />
+      {/* Opponent Drop Zone */}
+      <PlayerStats
+        key="opponentPlayerStats"
+        playerId={gameData.opponentPlayerId}
+        isPlayer={false}
+      />
+      <OpponentDropZone key="opponentDropzone" />
 
-        {/* Opponent Drop Zone */}
-        <PlayerStats playerId={gameData.opponentPlayerId} isPlayer={false} />
-        <OpponentDropZone key="opponentDropzone" />
+      <div className="text-center justify-center text-white">
+        <p className="mb-2 font-bold">
+          {!gameData.gameStatus ||
+          gameData.gameStatus === "WAITING_FOR_OPPONENT"
+            ? "Game hasn't started"
+            : gameData.gameOver
+              ? "Game over"
+              : gameData.goesFirst
+                ? "You go first this round"
+                : "Your opponent goes first this round"}
+        </p>
+      </div>
 
-        <div className="text-center justify-center text-white">
-          <p className="mb-2 font-bold">
-            {!gameData.gameStatus ||
-            gameData.gameStatus === "WAITING_FOR_OPPONENT"
-              ? "Game hasn't started"
-              : gameData.gameOver
-                ? "Game over"
-                : gameData.goesFirst
-                  ? "You go first this round"
-                  : "Your opponent goes first this round"}
-          </p>
-        </div>
-
-        {/* Player Drop Zone */}
-        {/* Not enough Mana overlay */}
-        <div className="grid grid-cols-1 grid-rows-2 place-items-center">
-          <div id="notEnoughMana">
-            {showNotification && (
-              <Notification
-                message={notificationText}
-                onClose={handleCloseNotification}
-                duration={2000} // Displays for 2 seconds
-              />
-            )}
-          </div>
-          <PlayerStats playerId={gameData.playerId} isPlayer={true} />
-        </div>
-
-        <CardContainerComponent id="dropzone" />
-
-        <div className="grid w-full place-items-center">
-          {gameData.gameStatus == "PLAY" ? (
-            <button
-              className="w-full justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-101"
-              onClick={handleSubmitCards}
-            >
-              Submit Early - You have {timeRemaining} second
-              {timeRemaining !== 1 ? "s" : ""}
-            </button>
-          ) : (
-            <button
-              className="w-full justify-center bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md"
-              onClick={handleSubmitCards}
-            >
-              {gameData.gameOver
-                ? "Game Over"
-                : gameData.gameStatus == "RESOLUTION"
-                  ? "Round is resolving"
-                  : "Waiting for your opponent"}
-            </button>
+      {/* Player Drop Zone */}
+      {/* Not enough Mana overlay */}
+      <div className="grid grid-cols-1 grid-rows-2 place-items-center">
+        <div id="notEnoughMana">
+          {showNotification && (
+            <Notification
+              message={notificationText}
+              onClose={handleCloseNotification}
+              duration={2000} // Displays for 2 seconds
+            />
           )}
         </div>
+        <PlayerStats
+          key="thisPlayerStats"
+          playerId={gameData.playerId}
+          isPlayer={true}
+        />
+      </div>
 
-        {/* Your Hand */}
-        <CardContainerComponent id="hand" />
-        {/* Drag overlay: Animate the overlay appearance */}
-        {activeCard && <CardDragOverlayComponent card={activeCard} />}
-      </DndContext>
-    </PageFrame>
+      <CardContainerComponent id="dropzone" />
+
+      <div className="grid w-full place-items-center">
+        {gameData.gameStatus == "PLAY" ? (
+          <button
+            className="w-full justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-101"
+            onClick={handleSubmitCards}
+          >
+            Submit Early - You have {timeRemaining} second
+            {timeRemaining !== 1 ? "s" : ""}
+          </button>
+        ) : (
+          <button
+            className="w-full justify-center bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md"
+            onClick={handleSubmitCards}
+          >
+            {gameData.gameOver
+              ? "Game Over"
+              : gameData.gameStatus == "RESOLUTION"
+                ? "Round is resolving"
+                : "Waiting for your opponent"}
+          </button>
+        )}
+      </div>
+
+      {/* Your Hand */}
+      <CardContainerComponent id="hand" />
+      {/* Drag overlay: Animate the overlay appearance */}
+      {activeCard && <CardDragOverlayComponent card={activeCard} />}
+    </DndContext>
   );
 };
 
@@ -267,12 +287,13 @@ const PlayerStats: React.FC<{ playerId: string; isPlayer: boolean }> = ({
   isPlayer,
 }) => {
   const gameData = useObservable(gameStore);
+  const title = isPlayer ? "playerDropzoneText" : "opponentDropzoneText";
   return (
     <div className="text-center text-white">
-      <p id={isPlayer ? "playerDropzoneText" : "opponentDropzoneText"}>
+      <p id={title}>
         {gameData.gameStatus != "PLAY" &&
         gameData.tick &&
-        (gameData.tick == playerId) == isPlayer
+        gameData.tick == playerId
           ? "⏳"
           : "  "}{" "}
         <b>{playerId ? `${playerId}: ` : isPlayer ? "You: " : "Opponent: "}</b>
