@@ -28,7 +28,7 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({ id }) => {
           ref={setNodeRef}
           id={id}
           layout
-          className="h-[140px] w-full flex flex-shrink-0 flex-wrap justify-center touch-pan-x items-center p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm"
+          className="h-min-[140px] w-full flex flex-shrink-0 flex-wrap gap-y-1 justify-center touch-pan-x items-center p-2 border border-gray-700 rounded bg-gray-800 shadow-sm"
         >
           <SortableContext
             key={id + gameData.tick}
@@ -67,7 +67,7 @@ export const OpponentDropZone: React.FC = () => {
   return (
     <div className="mb-1 mt-1 w-full">
       <section>
-        <div className="flex-shrink-0 flex h-[140px] w-full justify-center items-center flex-wrap p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm">
+        <div className="flex-shrink-0 flex flex-wrap gap-y-1 h-min-[140px] w-full justify-center items-center flex-wrap p-2 border border-gray-700 rounded bg-gray-800 shadow-sm">
           {gameData.opponentDropzone.length === 0 ? (
             <EmptyCard container="opponentDropzone" text="Opponent Board" />
           ) : (
@@ -89,9 +89,9 @@ export const AbilityQueue: React.FC = () => {
   return (
     <div className="-mb-2 -mt-2 w-full scale-75">
       <section>
-        <div className="flex-shrink-0 flex h-[140px] w-full justify-center items-center flex-wrap p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm">
+        <div className="flex-shrink-0 flex flex-wrap gap-y-1 h-min-[140px] w-full justify-center items-center p-2 border border-gray-700 rounded bg-gray-800 shadow-sm">
           {!gameData.abilityQueue.length ? (
-            <EmptyCard container="AbilityQueue" text="Ability Queue" />
+            <EmptyCard container="AbilityQueue" text="AbilityQueue" />
           ) : (
             gameData.abilityQueue.map((abilityQueueItem, index) =>
               gameData.playerId == abilityQueueItem.playerId ? (

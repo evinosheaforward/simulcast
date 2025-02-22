@@ -363,14 +363,14 @@ export const Deck: Card[] = [
   },
   {
     id: "Axe",
-    content: "Your opponent draws 1 fewer cards next turn",
-    cost: 2,
+    content: "Your opponent draws 2 fewer cards next turn",
+    cost: 3,
     time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.DRAW,
-        value: 1,
+        value: 2,
         prevention: true,
         immediate: true,
       },
@@ -492,14 +492,14 @@ export const Deck: Card[] = [
   },
   {
     id: "River",
-    content: "Gain 1 health for each spell your opponent casts this turn.",
+    content: "Gain 3 health for each spell your opponent casts this turn.",
     cost: 3,
     time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.HEALTH,
-        value: 1,
+        value: 3,
       },
       trigger: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -625,7 +625,7 @@ export const Deck: Card[] = [
     content:
       "Deal 2 damage to your opponent at the end of the next three rounds.",
     cost: 4,
-    time: 2,
+    time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,

@@ -189,45 +189,36 @@ class Game {
   }
 
   playBotTurn() {
-    // Configurable threshold for a "big turn"
-    const BIG_TURN_THRESHOLD = 5; // Bot will wait if current mana is less than this, unless forced to play
     const botPlayer = this.players.find((p: any) => p.id === this.botPlayerId);
     if (!botPlayer || !botPlayer.hand || botPlayer.hand.length === 0) {
       return;
     }
-
-    // Determine available mana
     let availableMana = botPlayer.mana;
-
-    // If available mana is below the threshold and no mana-generating spells are available,
-    // the bot chooses to wait (skip playing cards this turn) to build up mana.
-    const manaOrDraw: Card[] = botPlayer.hand.filter((card: Card) => {
-      // For our purposes, assume any card whose effect type is MANA and immediate is a mana generator.
-      return (
-        (card.ability.effect.type === TargetTypes.MANA ||
-          card.ability.effect.type === TargetTypes.DRAW) &&
-        card.ability.effect.immediate === true
-      );
-    });
-    if (availableMana < BIG_TURN_THRESHOLD && manaOrDraw.length === 0) {
-      // Skip playing cards to save mana for a big turn
-      return;
-    }
-
-    // Filter playable cards (cards that cost <= availableMana)
     const playableCards: Card[] = botPlayer.hand.filter(
       (card: Card) => card.cost <= availableMana,
     );
-
-    const expensiveNextOpponent = playableCards.filter(
-      (card: Card) =>
-        card.ability.trigger &&
-        card.ability.trigger.subtype === AbilityExpirations.NEXT_CARD &&
-        card.ability.effect.targetPlayer === PlayerTargets.OPPONENT,
+    console.log(
+      `BOT PlAYABLE CARDS: ${JSON.stringify(playableCards.map((c) => c.id))}`,
     );
-
-    if (expensiveNextOpponent.length > 0) {
-      const chosen = expensiveNextOpponent.reduce((best, card) =>
+    const counterPlay = playableCards.filter(
+      (card: Card) =>
+        (card.ability.trigger &&
+          // cards that trigger on the opponent playing cards
+          card.ability.trigger.subtype === AbilityExpirations.NEXT_CARD &&
+          card.ability.trigger.targetPlayer === PlayerTargets.OPPONENT) ||
+        // cards that affect their spells, like counter
+        (card.ability.effect.type === TargetTypes.SPELL &&
+          ((card.ability.trigger?.targetPlayer &&
+            card.ability.trigger.targetPlayer === PlayerTargets.OPPONENT) ||
+            (!card.ability.trigger?.targetPlayer &&
+              card.ability.effect.targetPlayer === PlayerTargets.OPPONENT))),
+    );
+    console.log(
+      `BOT Counterplay cards ${JSON.stringify(counterPlay.map((c) => c.id))}`,
+    );
+    if (counterPlay.length > 0) {
+      console.log("BOT PLAY Counterplay card");
+      const chosen = counterPlay.reduce((best, card) =>
         card.cost > best.cost ? card : best,
       );
       botPlayer.dropzone = [chosen];
@@ -235,47 +226,111 @@ class Game {
       return;
     }
 
-    const comboCards = playableCards.filter(
-      (card: Card) =>
-        card.ability.trigger &&
-        card.ability.trigger.targetPlayer === PlayerTargets.SELF,
+    // check for combo
+    const comboCards = playableCards
+      .filter(
+        (card: Card) =>
+          (card.ability.effect.type == TargetTypes.SPELL &&
+            // Cards that modify others, like sword
+            ((card.ability.trigger?.targetPlayer &&
+              card.ability.trigger?.targetPlayer === PlayerTargets.SELF) ||
+              (!card.ability.trigger?.targetPlayer &&
+                card.ability.effect.targetPlayer === PlayerTargets.SELF))) ||
+          // cards like bow, bloom
+          (card.ability.trigger &&
+            card.ability.trigger?.subtype === AbilityExpirations.NEXT_CARD &&
+            ((card.ability.trigger.targetPlayer &&
+              card.ability.trigger.targetPlayer === PlayerTargets.SELF) ||
+              (!card.ability.trigger.targetPlayer &&
+                card.ability.effect.targetPlayer === PlayerTargets.SELF))),
+      )
+      // sort reverse-alphabetically - bad hueristic for bloom and bow go after wand, scepter, sword, but it works
+      .sort((a, b) => b.id.localeCompare(a.id));
+    console.log(
+      `BOT AVAIL COMBO CARDS: ${JSON.stringify(comboCards.map((c) => c.id))}`,
     );
+    if (comboCards.length > 2) {
+      let comboMana =
+        availableMana - comboCards.reduce((a, b) => a + b.cost, 0);
+      let playableCount = 0;
 
-    const endOfRoundSpells = playableCards.filter(
-      (card: Card) =>
-        card.ability.expiration &&
-        (card.ability.trigger?.subtype === AbilityExpirations.END_OF_ROUND ||
-          (card.ability.expiration?.type === AbilityExpirations.END_OF_ROUND &&
-            card.ability.expiration?.triggerOnExpiration)),
-    );
-
-    let finalOrder: Card[] = [];
-    finalOrder = finalOrder.concat(comboCards);
-    if (playableCards.length >= 3 && playableCards.length > comboCards.length) {
-      playableCards.sort((a, b) => a.cost - b.cost);
-      finalOrder.concat(
-        playableCards.filter((c) => !finalOrder.some((cf) => cf.id == c.id)),
-      );
+      playableCards
+        .sort((a, b) => a.cost - b.cost)
+        .forEach((c) => {
+          if (!comboCards.some((cc) => cc.id == c.id)) {
+            if (c.cost <= comboMana && c.cost < 5) {
+              comboMana -= c.cost;
+              playableCount++;
+              comboCards.push(c);
+            }
+          }
+        });
+      if (playableCount > 2) {
+        // scepter-wand is a must
+        if (comboCards[0].id === "Wand") {
+          const scepterIndex = comboCards.findIndex(
+            (card) => card.id === "Scepter",
+          );
+          if (scepterIndex > -1) {
+            // Remove the "Scepter" card from its current position
+            const [scepterCard] = comboCards.splice(scepterIndex, 1);
+            // Insert it at the front of the list
+            comboCards.unshift(scepterCard);
+          }
+        }
+        console.log("BOT COMBO");
+        botPlayer.dropzone = comboCards;
+        botPlayer.hand = botPlayer.hand.filter(
+          (c: Card) => !comboCards.some((chosen) => chosen.id === c.id),
+        );
+        return;
+      }
     }
-    finalOrder = finalOrder.concat(
-      endOfRoundSpells.filter((c) => !finalOrder.some((cf) => cf.id == c.id)),
-    );
-    console.log(`BOT CARD ORDER: ${finalOrder}`);
-    let leftoverMana = availableMana;
-    const chosenCards: Card[] = [];
-    for (const card of finalOrder) {
-      if (card.cost <= leftoverMana) {
-        chosenCards.push(card);
-        leftoverMana -= card.cost;
+    // play a boring, end of turn spell like torch
+    const endOfRoundSpell = playableCards
+      .filter(
+        (card: Card) =>
+          card.ability.expiration &&
+          card.ability.expiration?.type === AbilityExpirations.END_OF_ROUND &&
+          // triggers on end of round
+          (card.ability.expiration?.triggerOnExpiration ||
+            card.ability.trigger?.subtype === AbilityExpirations.END_OF_ROUND),
+      )
+      .sort((a, b) => b.cost - a.cost)[0];
+
+    if (endOfRoundSpell && Math.random() > 0.7) {
+      console.log("BOT PLAY boring spell");
+      if (endOfRoundSpell) {
+        botPlayer.dropzone = [endOfRoundSpell];
+        botPlayer.hand = botPlayer.hand.filter(
+          (c: Card) => c.id !== endOfRoundSpell.id,
+        );
+        return;
       }
     }
 
-    // Final check: if no cards were chosen and there are mana generators, play one of them.
-    if (chosenCards.length === 0 && manaOrDraw.length > 0) {
-      // Choose the cheapest mana generator
-      const mg = manaOrDraw.sort((a, b) => a.cost - b.cost)[0];
+    // no counterplay or combo, or boring play => play card draw or mana
+    const chosenCards: Card[] = [];
+    const cardDraw: Card[] = botPlayer.hand.filter((card: Card) => {
+      return card.ability.effect.type === TargetTypes.DRAW;
+    });
+    if (cardDraw.length > 0) {
+      console.log("BOT PLAY card draw");
+      // Choose the most expensive card draw spell
+      const chosenCard = cardDraw.sort((a, b) => b.cost - a.cost)[0];
+      chosenCards.push(chosenCard);
+      availableMana -= chosenCard.cost;
+    }
+
+    const manaSpells: Card[] = botPlayer.hand.filter((card: Card) => {
+      return card.ability.effect.type === TargetTypes.MANA;
+    });
+    if (chosenCards.length === 0 && manaSpells.length > 0) {
+      console.log("BOT PLAY mana spell");
+      // Choose the most expensive mana generator
+      const mg = manaSpells.sort((a, b) => b.cost - a.cost)[0];
       chosenCards.push(mg);
-      leftoverMana -= mg.cost;
+      availableMana -= mg.cost;
     }
 
     botPlayer.dropzone = chosenCards;

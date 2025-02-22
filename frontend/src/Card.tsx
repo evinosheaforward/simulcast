@@ -59,7 +59,7 @@ export const EmptyCard: React.FC<{ container: string; text: string }> = ({
       layout
       {...listeners}
       {...attributes}
-      className="flex items-center justify-center w-full h-[120px] touch-none pointer-events-none bg-transparent shadow-md text-center text-lg text-gray-400 font-bold"
+      className="flex items-center justify-center w-full h-[120px] touch-none pointer-events-none bg-transparent text-center text-lg text-gray-400 font-bold"
     >
       {text}
     </motion.div>
@@ -145,7 +145,7 @@ export const OpponentCardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
     <motion.div
       layout
       whileHover={{ scale: 1.75, zIndex: 1000 }}
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 1.75, zIndex: 1000 }}
       className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#8c3720] text-white shadow-md"
     >
       <CardFrameComponent card={card as Card} />
