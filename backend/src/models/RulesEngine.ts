@@ -24,12 +24,16 @@ export enum GameState {
   RESOLUTION = "RESOLUTION",
 }
 
+const STARTING_HEALTH = 20;
+
 class Game {
   id: string;
   players: Player[];
   state: GameState;
   rulesEngine: RulesEngine;
   decks = new Map<string, string[]>();
+  isBotGame: boolean = false;
+  botPlayerId?: string;
 
   constructor(id: string) {
     this.id = id;
@@ -38,7 +42,7 @@ class Game {
       hand: [],
       dropzone: [],
       submitted: false,
-      health: 10,
+      health: STARTING_HEALTH,
       mana: 0,
       cardDraw: 0,
     };
@@ -53,7 +57,7 @@ class Game {
       hand: [],
       dropzone: [],
       submitted: false,
-      health: 10,
+      health: STARTING_HEALTH,
       mana: 0,
       cardDraw: 0,
     };
@@ -61,6 +65,24 @@ class Game {
     this.rulesEngine.goesFirst =
       Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
     return joinPlayer;
+  }
+
+  addBot() {
+    this.isBotGame = true;
+    const botPlayer: Player = {
+      id: "BOT-" + randomName(),
+      hand: [],
+      dropzone: [],
+      submitted: false,
+      health: STARTING_HEALTH,
+      mana: 0,
+      cardDraw: 0,
+    };
+    this.players.push(botPlayer);
+    this.botPlayerId = botPlayer.id;
+    this.rulesEngine.goesFirst =
+      Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
+    return botPlayer;
   }
 
   async playerJoined(playerId: string, io: Server) {
@@ -100,6 +122,9 @@ class Game {
     });
 
     this.state = GameState.PLAY;
+    if (this.isBotGame) {
+      this.playBotTurn();
+    }
     this.players.forEach((p) => {
       io.to(p.id).emit("roundStart", p);
     });
@@ -162,7 +187,112 @@ class Game {
     }
     return structuredClone(result.map((cardId) => DeckMap.get(cardId)!));
   }
+
+  playBotTurn() {
+    // Configurable threshold for a "big turn"
+    const BIG_TURN_THRESHOLD = 5; // Bot will wait if current mana is less than this, unless forced to play
+    const botPlayer = this.players.find((p: any) => p.id === this.botPlayerId);
+    if (!botPlayer || !botPlayer.hand || botPlayer.hand.length === 0) {
+      return;
+    }
+
+    // Determine available mana
+    let availableMana = botPlayer.mana;
+
+    // If available mana is below the threshold and no mana-generating spells are available,
+    // the bot chooses to wait (skip playing cards this turn) to build up mana.
+    const manaOrDraw: Card[] = botPlayer.hand.filter((card: Card) => {
+      // For our purposes, assume any card whose effect type is MANA and immediate is a mana generator.
+      return (
+        (card.ability.effect.type === TargetTypes.MANA ||
+          card.ability.effect.type === TargetTypes.DRAW) &&
+        card.ability.effect.immediate === true
+      );
+    });
+    if (availableMana < BIG_TURN_THRESHOLD && manaOrDraw.length === 0) {
+      // Skip playing cards to save mana for a big turn
+      return;
+    }
+
+    // Filter playable cards (cards that cost <= availableMana)
+    const playableCards: Card[] = botPlayer.hand.filter(
+      (card: Card) => card.cost <= availableMana,
+    );
+
+    const expensiveNextOpponent = playableCards.filter(
+      (card: Card) =>
+        card.ability.trigger &&
+        card.ability.trigger.subtype === AbilityExpirations.NEXT_CARD &&
+        card.ability.effect.targetPlayer === PlayerTargets.OPPONENT,
+    );
+
+    if (expensiveNextOpponent.length > 0) {
+      const chosen = expensiveNextOpponent.reduce((best, card) =>
+        card.cost > best.cost ? card : best,
+      );
+      botPlayer.dropzone = [chosen];
+      botPlayer.hand = botPlayer.hand.filter((c: Card) => c.id !== chosen.id);
+      return;
+    }
+
+    const comboCards = playableCards.filter(
+      (card: Card) =>
+        card.ability.trigger &&
+        card.ability.trigger.targetPlayer === PlayerTargets.SELF,
+    );
+
+    const endOfRoundSpells = playableCards.filter(
+      (card: Card) =>
+        card.ability.expiration &&
+        (card.ability.trigger?.subtype === AbilityExpirations.END_OF_ROUND ||
+          (card.ability.expiration?.type === AbilityExpirations.END_OF_ROUND &&
+            card.ability.expiration?.triggerOnExpiration)),
+    );
+
+    let finalOrder: Card[] = [];
+    finalOrder = finalOrder.concat(comboCards);
+    if (playableCards.length >= 3 && playableCards.length > comboCards.length) {
+      playableCards.sort((a, b) => a.cost - b.cost);
+      finalOrder.concat(
+        playableCards.filter((c) => !finalOrder.some((cf) => cf.id == c.id)),
+      );
+    }
+    finalOrder = finalOrder.concat(
+      endOfRoundSpells.filter((c) => !finalOrder.some((cf) => cf.id == c.id)),
+    );
+    console.log(`BOT CARD ORDER: ${finalOrder}`);
+    let leftoverMana = availableMana;
+    const chosenCards: Card[] = [];
+    for (const card of finalOrder) {
+      if (card.cost <= leftoverMana) {
+        chosenCards.push(card);
+        leftoverMana -= card.cost;
+      }
+    }
+
+    // Final check: if no cards were chosen and there are mana generators, play one of them.
+    if (chosenCards.length === 0 && manaOrDraw.length > 0) {
+      // Choose the cheapest mana generator
+      const mg = manaOrDraw.sort((a, b) => a.cost - b.cost)[0];
+      chosenCards.push(mg);
+      leftoverMana -= mg.cost;
+    }
+
+    botPlayer.dropzone = chosenCards;
+    botPlayer.hand = botPlayer.hand.filter(
+      (c: Card) => !chosenCards.some((chosen) => chosen.id === c.id),
+    );
+  }
 }
+
+/*
+function shuffleArray<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+  */
 
 export default Game;
 
@@ -245,7 +375,7 @@ class RulesEngine {
                 (p) => p.id != lastPlayer,
               )[0].id;
             } else {
-              new FrontEndUpdate(
+              await new FrontEndUpdate(
                 this.activePlayer!,
                 player.dropzone,
                 "card was somehow null?",
@@ -342,6 +472,7 @@ class RulesEngine {
             }
             if (
               activeCard.ability.effect.spellChange?.value &&
+              targetCard.ability.effect.value &&
               targetCard.ability.effect.value !=
                 activeCard.ability.effect.spellChange.value
             ) {
@@ -412,13 +543,32 @@ class RulesEngine {
                 }
                 break;
               case TargetSubTypes.SPELL_TYPE:
-                // change time
-                if (targetPlayer.dropzone[0]) {
-                  targetPlayer.dropzone[0].timer! = Math.max(
-                    targetPlayer.dropzone[0].timer! + effectValue!,
-                    0,
-                  );
-                  updateEvent.updateLog = `${activeCard.id} changed the time of ${targetPlayer.dropzone[0].id} by ${effectValue!}`;
+                const immediateTargetCard = targetPlayer.dropzone[0];
+                if (immediateTargetCard) {
+                  if (activeCard.ability.effect.spellChange?.type) {
+                    immediateTargetCard.ability.effect.type =
+                      activeCard.ability.effect.spellChange.type;
+                    updateEvent.updateLog += `${activeCard.id} changed the type of ${immediateTargetCard!.id} to ${immediateTargetCard!.ability.effect.type}`;
+                  }
+                  if (
+                    activeCard.ability.effect.spellChange?.targetPlayer &&
+                    immediateTargetCard.ability.effect.targetPlayer !=
+                      activeCard.ability.effect.spellChange!.targetPlayer
+                  ) {
+                    immediateTargetCard.ability.effect.targetPlayer =
+                      activeCard.ability.effect.spellChange!.targetPlayer;
+                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${immediateTargetCard!.id} to ${immediateTargetCard!.ability.effect.type}`;
+                  }
+                  if (
+                    activeCard.ability.effect.spellChange?.value &&
+                    immediateTargetCard?.ability.effect.value &&
+                    immediateTargetCard.ability.effect.value !=
+                      activeCard.ability.effect.spellChange.value
+                  ) {
+                    immediateTargetCard.ability.effect.value =
+                      activeCard.ability.effect.spellChange.value;
+                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${immediateTargetCard!.id} to ${immediateTargetCard.ability.effect.value}`;
+                  }
                 }
                 break;
 
@@ -506,12 +656,12 @@ class RulesEngine {
     await new FrontEndUpdate(this.activePlayer!, player.dropzone).send(
       io,
       this.gameId,
-      200,
+      500,
     );
   }
 
   async sendActivePlayerUpdate(playerId: string, io: Server) {
-    await new FrontEndUpdate(playerId).send(io, this.gameId, 800);
+    await new FrontEndUpdate(playerId).send(io, this.gameId, 500);
   }
 }
 
@@ -554,7 +704,7 @@ class AbilityQueue {
           activePlayer,
           null,
           `${this.abilities[i].card.id} triggered`,
-        ).send(io, gameId, 300);
+        ).send(io, gameId, 200);
         if (this.abilities[i].card.ability.trigger?.expiresOnTrigger) {
           triggers.push(this.abilities.splice(i, 1)[0]);
         } else {
@@ -592,8 +742,8 @@ class AbilityQueue {
 
       // Expiration-type triggers
       if (
-        currentTrigger.ability.trigger!.type === TargetTypes.EXPIRATION &&
-        currentTrigger.ability.trigger!.subtype === expiration &&
+        currentTrigger.ability.trigger?.type === TargetTypes.EXPIRATION &&
+        currentTrigger.ability.trigger?.subtype === expiration &&
         evalExpiration(
           expiration,
           owningPlayer,
@@ -811,7 +961,6 @@ class FrontEndUpdate {
   }
 
   async send(io: Server, gameId: string, wait: number = 1000) {
-    console.log(`UPDATE EVENT: ${JSON.stringify(this.toObject())}`);
     io.to(gameId).emit("resolveEvent", this.toObject());
     await new Promise((resolve) => setTimeout(resolve, wait));
   }

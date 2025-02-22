@@ -9,6 +9,10 @@ const GameOptions: React.FC = () => {
     gameStore.createGame();
   };
 
+  const handleCreateBotGame = () => {
+    gameStore.createGame(true);
+  };
+
   const handleJoinGame = () => {
     console.log(`try join game with id: ${joinGameId}`);
     if (!joinGameId) return;
@@ -27,21 +31,30 @@ const GameOptions: React.FC = () => {
       </div>
       <div>
         <button
-          onClick={handleJoinGame}
-          className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
+          onClick={handleCreateBotGame}
+          className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 sm:px-1 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
         >
-          Join Game
+          Play Against A Bot
         </button>
       </div>
-      <div>
-        <input
-          type="text"
-          placeholder="Game ID to Join"
-          value={joinGameId}
-          onChange={(e) => setJoinGameId(e.target.value)}
-          className="flex-none w-50 bg-gray-700 text-center text-white border border-gray-600 rounded py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-        />
-      </div>
+
+      <form onSubmit={handleJoinGame}>
+        <div className="items-center justify-center grid auto-rows-auto gap-1 place-items-center">
+          <input
+            type="text"
+            placeholder="Game ID to Join"
+            value={joinGameId}
+            onChange={(e) => setJoinGameId(e.target.value)}
+            className="flex-none w-50 bg-gray-700 text-center text-white border border-gray-600 rounded py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+          <button
+            type="submit"
+            className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
+          >
+            Join Game
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

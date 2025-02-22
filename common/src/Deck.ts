@@ -51,10 +51,10 @@ export interface Ability {
     prevention?: boolean;
     value?: number;
     spellChange?: {
-      targetPlayer: PlayerTargets;
-      type: TargetTypes;
+      targetPlayer?: PlayerTargets;
+      type?: TargetTypes;
       value?: number;
-    }
+    };
     immediate?: boolean;
   };
   // when triggered, what condition to resolve
@@ -125,7 +125,8 @@ export const Deck: Card[] = [
   },
   {
     id: "Cloud",
-    content: "Reduce the value to 0 for the next damage spell your casts this turn.",
+    content:
+      "Reduce the value to 0 for the next damage spell your casts this turn.",
     cost: 1,
     time: 2,
     ability: {
@@ -146,7 +147,8 @@ export const Deck: Card[] = [
   },
   {
     id: "Shield",
-    content: "Reduce the value by 1 for damage spells your opponent casts this turn.",
+    content:
+      "Reduce the value by 1 for damage spells your opponent casts this turn.",
     cost: 2,
     time: 1,
     ability: {
@@ -181,9 +183,9 @@ export const Deck: Card[] = [
   },
   {
     id: "Goblet",
-    content: "Gain 2 health.",
+    content: "Gain 3 health.",
     cost: 2,
-    time: 1,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
@@ -195,7 +197,8 @@ export const Deck: Card[] = [
   },
   {
     id: "Helm",
-    content: "Reduce the value to 0 for damage spells your opponent casts next turn.",
+    content:
+      "Reduce the value to 0 for damage spells your opponent casts next turn.",
     cost: 3,
     time: 4,
     ability: {
@@ -246,7 +249,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Spark",
-    content: "Deal 1 damage.",
+    content: "Deal 2 damage.",
     cost: 1,
     time: 1,
     ability: {
@@ -261,7 +264,7 @@ export const Deck: Card[] = [
   {
     id: "Flame",
     content: "Deal 3 damage.",
-    cost: 3,
+    cost: 2,
     time: 2,
     ability: {
       effect: {
@@ -274,8 +277,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Steed",
-    content:
-      "Reduce the time by 3 for your next spell this turn.",
+    content: "Reduce the time by 3 for your next spell this turn.",
     cost: 1,
     time: 1,
     ability: {
@@ -332,7 +334,7 @@ export const Deck: Card[] = [
       },
     },
   },
-{
+  {
     id: "Quill",
     content: "Convert your next healing spell this turn to a card-draw spell.",
     cost: 2,
@@ -341,21 +343,21 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.SPELL,
-        subtype:  TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_TYPE,
         spellChange: {
           targetPlayer: PlayerTargets.SELF,
           type: TargetTypes.DRAW,
         },
       },
       trigger: {
-        type: TargetTypes.DAMAGE,
+        type: TargetTypes.HEALTH,
         targetPlayer: PlayerTargets.SELF,
-        expiresOnTrigger: true
+        expiresOnTrigger: true,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
         numActivations: 1,
-        triggerOnExpiration: false
+        triggerOnExpiration: false,
       },
     },
   },
@@ -369,6 +371,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.DRAW,
         value: 1,
+        prevention: true,
         immediate: true,
       },
     },
@@ -396,7 +399,8 @@ export const Deck: Card[] = [
   },
   {
     id: "Inferno",
-    content: "After each of your opponent's spells activate this turn, they take 2 damage.",
+    content:
+      "After each of your opponent's spells activate this turn, they take 2 damage.",
     cost: 6,
     time: 2,
     ability: {
@@ -412,7 +416,7 @@ export const Deck: Card[] = [
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
         numActivations: 1,
-      }
+      },
     },
   },
   {
@@ -439,7 +443,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.SPELL,
         value: 2,
-        immediate: true
+        immediate: true,
       },
     },
   },
@@ -456,7 +460,6 @@ export const Deck: Card[] = [
       },
       trigger: {
         type: TargetTypes.SPELL,
-        expiresOnTrigger: true,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
@@ -466,8 +469,9 @@ export const Deck: Card[] = [
   },
   {
     id: "Bow",
-    content: "Deal 1 damage for each spell you cast this turn.",
-    cost: 2,
+    content:
+      "Deal 1 damage for each spell you cast this turn (including this one).",
+    cost: 3,
     time: 1,
     ability: {
       effect: {
@@ -483,7 +487,7 @@ export const Deck: Card[] = [
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
         numActivations: 1,
-      }
+      },
     },
   },
   {
@@ -505,7 +509,7 @@ export const Deck: Card[] = [
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
         numActivations: 1,
-      }
+      },
     },
   },
   {
@@ -517,77 +521,61 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.DRAW,
-        value: 3
-      },
-      trigger: {
-        type: TargetTypes.EXPIRATION,
-        subtype: AbilityExpirations.END_OF_ROUND 
+        value: 3,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
-        numActivations: 2, 
-        triggerOnExpiration: true
+        numActivations: 2,
+        triggerOnExpiration: true,
       },
-      condition: {
-        type: TargetTypes.EXPIRATION,
-        eval: Evaluation.EQUAL,
-        value: 1
-      }
-    }
+    },
   },
-{
+  {
     id: "Shatter",
-    content: "Decrease the opponent's next spell value by 2 this turn.",
+    content: "Decrease the opponent's left-most spell's value to 0.",
     cost: 2,
     time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.SPELL,
-        value: 2,
-        prevention: true
+        subtype: TargetSubTypes.SPELL_TYPE,
+        immediate: true,
+        spellChange: {
+          value: 0,
+        },
       },
-      trigger: {
-        targetPlayer: PlayerTargets.OPPONENT,
-        type: TargetTypes.SPELL,
-        expiresOnTrigger: true,
-      },
-      expiration: {
-        type: AbilityExpirations.END_OF_ROUND,
-        numActivations: 1
-      }
-    }
+    },
   },
-{
+  {
     id: "Alchemy",
-    content: "Convert your next damage spell this turn to a mana spell.",
+    content: "Convert your next mana spell this turn to a card draw spell.",
     cost: 2,
     time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.SPELL,
-        subtype:  TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_TYPE,
         spellChange: {
-          targetPlayer: PlayerTargets.SELF,
-          type: TargetTypes.MANA,
+          type: TargetTypes.DRAW,
         },
       },
       trigger: {
-        type: TargetTypes.DAMAGE,
         targetPlayer: PlayerTargets.SELF,
-        expiresOnTrigger: true
+        type: TargetTypes.MANA,
+        expiresOnTrigger: true,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
         numActivations: 1,
-        triggerOnExpiration: false
       },
-    }
+    },
   },
-{
+  {
     id: "Hex",
-    content: "Change your opponents health spells to self-damage spells this turn.",
+    content:
+      "Change your opponents damage spells to target themself this turn.",
     cost: 5,
     time: 2,
     ability: {
@@ -596,41 +584,68 @@ export const Deck: Card[] = [
         type: TargetTypes.SPELL,
         subtype: TargetSubTypes.SPELL_TYPE,
         spellChange: {
-          targetPlayer: PlayerTargets.OPPONENT,
-          type: TargetTypes.DAMAGE
+          targetPlayer: PlayerTargets.SELF,
         },
       },
       trigger: {
         targetPlayer: PlayerTargets.OPPONENT,
-        type: TargetTypes.HEALTH,
+        type: TargetTypes.DAMAGE,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
-        numActivations: 1
-      }
-    }
+        numActivations: 1,
+      },
+    },
   },
-{
+  {
     id: "Bloom",
-    content: "Gain 1 health whenever you cast a spell this turn (including this one).",
-    cost: 1,
-    time: 1,
+    content:
+      "Gain 1 health whenever you cast a spell this turn (including this one).",
+    cost: 2,
+    time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.HEALTH,
-        value: 1
+        value: 1,
       },
       trigger: {
         type: TargetTypes.EXPIRATION,
         subtype: AbilityExpirations.NEXT_CARD,
-        targetPlayer: PlayerTargets.SELF
+        targetPlayer: PlayerTargets.SELF,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
-        numActivations: 1
-      }
-    }
+        numActivations: 1,
+      },
+    },
+  },
+  {
+    id: "Crypt",
+    content:
+      "Deal 2 damage to your opponent at the end of the next three rounds.",
+    cost: 4,
+    time: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.DAMAGE,
+        value: 2,
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 4,
+      },
+      condition: {
+        type: TargetTypes.EXPIRATION,
+        eval: Evaluation.LESS,
+        value: 4,
+      },
+    },
   },
   /* ------- NEW CARD NEED ART ---------- //
   {
@@ -650,36 +665,10 @@ export const Deck: Card[] = [
   },
   
   
-  {
-    id: "Curse",
-    content: "Deal 2 damage to your opponent at the end of the next three rounds to your opponent.",
-    cost: 4,
-    time: 2,
-    ability: {
-      effect: {
-        targetPlayer: PlayerTargets.OPPONENT,
-        type: TargetTypes.DAMAGE,
-        value: 2
-      },
-      trigger: {
-        type: TargetTypes.EXPIRATION,
-        subtype: AbilityExpirations.END_OF_ROUND
-      },
-      expiration: {
-        type: AbilityExpirations.END_OF_ROUND,
-        numActivations: 4
-      },
-      condition: {
-        type: TargetTypes.EXPIRATION,
-        eval: Evaluation.LESS,
-        value: 4
-      }
-    }
-  },
+  ,
   
   
   */
-
 
   /* Card ideas:
     - devestation: remove all cards from the board? 4/6
@@ -717,7 +706,6 @@ export const Deck: Card[] = [
     }
   },
   */
-
 ];
 
 export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));

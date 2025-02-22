@@ -75,9 +75,9 @@ export const CardDragOverlayComponent: React.FC<{ card: CardSnapshot }> = ({
         <motion.div
           layout
           className="flex items-center justify-center w-20 h-[120px] border-2 border-gray-700 rounded-lg text-white shadow-lg"
-          initial={{ scale: 1.2, opacity: 0.8 }}
-          animate={{ scale: 1.75, opacity: 1, zIndex: 1000 }}
-          exit={{ scale: 0.8, opacity: 0.8 }}
+          initial={{ scale: 1.0, opacity: 0.8 }}
+          animate={{ scale: 1.0, opacity: 1 }}
+          exit={{ scale: 1.0, opacity: 0.8 }}
         >
           <PlayerCardFrameComponent card={card} />
         </motion.div>
@@ -129,8 +129,8 @@ export const PlayerCardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
   return (
     <motion.div
       layout
-      whileHover={{ scale: 1.75, zIndex: 1000 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.75, zIndex: 500 }}
+      whileTap={{ scale: 1.75, zIndex: 500 }}
       className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#564434] text-white shadow-md"
     >
       <CardFrameComponent card={card as Card} />

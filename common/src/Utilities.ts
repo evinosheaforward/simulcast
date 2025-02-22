@@ -12,4 +12,3 @@ export const randomName = () => {
     length: 2, // number of words
   });
 };
-

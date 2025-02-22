@@ -22,6 +22,18 @@ router.post("/create", (req: Request, res: Response) => {
   res.json({ gameId: finalGameId, playerId: newGame.players[0].id });
 });
 
+/** POST /api/game/createBotGame */
+router.post("/createBotGame", (req: Request, res: Response) => {
+  const { gameId } = req.body;
+  console.log("game ID: ", gameId);
+  const finalGameId = gameId || randomName();
+  console.log("final game ID: ", finalGameId);
+  const newGame = new Game(finalGameId);
+  newGame.addBot();
+  games.set(finalGameId, newGame);
+  res.json({ gameId: finalGameId, playerId: newGame.players[0].id });
+});
+
 /** GET /api/game/get
  *  Retrieves a game state by its gameId.
  */
@@ -67,6 +79,7 @@ export function handleSocketConnection(io: Server, socket: Socket) {
       if (game.players.length === 2) {
         await game.startGame(io);
       } else {
+        console.log("only 1 player");
         socket.emit("waitingForOpponent");
       }
     },
@@ -99,10 +112,25 @@ export function handleSocketConnection(io: Server, socket: Socket) {
         return;
       }
       player.dropzone = populate(dropzone);
+
+      let cheated = false;
+      for (const item of player.dropzone) {
+        // Check if `target` already has an element with the same `id`
+        const index = player.hand.findIndex((t) => t.id === item.id);
+        if (index !== -1) {
+          player.hand.splice(index, 1);
+        } else {
+          cheated = true;
+          console.log("CHEAT? card that wasn't in hand into dropzone");
+        }
+      }
+      if (cheated) {
+        player.dropzone = [];
+      }
       player.hand = hand;
       player.submitted = true;
 
-      if (game.players.every((p) => p.submitted)) {
+      if (game.players.every((p) => p.submitted) || game.isBotGame) {
         game.state = GameState.RESOLUTION;
         console.log("roundSubmitted by both players");
         game.roundSubmitted(io);

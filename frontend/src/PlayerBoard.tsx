@@ -31,7 +31,7 @@ const PlayerBoard: React.FC = () => {
   useEffect(() => {
     if (gameData.gameId) {
       window.scrollTo({
-        top: 324,
+        top: 364,
         behavior: "smooth",
       });
     }

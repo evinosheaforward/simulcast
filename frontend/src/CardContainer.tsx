@@ -91,7 +91,7 @@ export const AbilityQueue: React.FC = () => {
       <section>
         <div className="flex-shrink-0 flex h-[140px] w-full justify-center items-center flex-wrap p-4 md:p-2 sm:p-1 border border-gray-700 rounded bg-gray-800 shadow-sm">
           {!gameData.abilityQueue.length ? (
-            <EmptyCard container="AbilityQueue" text="AbilityQueue" />
+            <EmptyCard container="AbilityQueue" text="Ability Queue" />
           ) : (
             gameData.abilityQueue.map((abilityQueueItem, index) =>
               gameData.playerId == abilityQueueItem.playerId ? (

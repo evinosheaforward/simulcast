@@ -29,3 +29,4 @@ frontend/images/Alchemy.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Bloom.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Hex.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Oct.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Crypt.png filter=lfs diff=lfs merge=lfs -text

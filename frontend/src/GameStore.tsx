@@ -357,10 +357,11 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
    * Create a new game by calling the backend API.
    * Expects the backend to return a { gameId, playerId }.
    */
-  createGame: flow(function* createGame() {
+  createGame: flow(function* createGame(isBotGame: boolean = false) {
     const gameId = randomName();
+    const endpoint = isBotGame ? "/api/game/createBotGame" : "/api/game/create";
     try {
-      const response = yield fetch(urlOf("/api/game/create"), {
+      const response = yield fetch(urlOf(endpoint), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
