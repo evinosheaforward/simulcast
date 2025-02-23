@@ -126,7 +126,7 @@ export const Deck: Card[] = [
   {
     id: "Cloud",
     content:
-      "Reduce the value to 0 for the next damage spell your casts this turn.",
+      "Reduce the value to 0 for the next damage spell your opponent casts this turn.",
     cost: 1,
     time: 2,
     ability: {
@@ -656,6 +656,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.MANA,
+        value: 2,
       },
       trigger: {
         type: TargetTypes.EXPIRATION,

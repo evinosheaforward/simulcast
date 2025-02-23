@@ -599,6 +599,10 @@ class RulesEngine {
                 break;
               case TargetSubTypes.SPELL_TYPE:
                 const immediateTargetCard = targetPlayer.dropzone[0];
+
+                console.log(
+                  `useAbility: immediate, SPELL, SPELL_TYPE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
+                );
                 if (immediateTargetCard) {
                   if (activeCard.ability.effect.spellChange?.type) {
                     immediateTargetCard.ability.effect.type =
@@ -612,18 +616,19 @@ class RulesEngine {
                   ) {
                     immediateTargetCard.ability.effect.targetPlayer =
                       activeCard.ability.effect.spellChange!.targetPlayer;
-                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${immediateTargetCard!.id} to ${immediateTargetCard!.ability.effect.type}`;
+                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.type}`;
                   }
                   if (
-                    activeCard.ability.effect.spellChange?.value &&
-                    immediateTargetCard?.ability.effect.value &&
-                    immediateTargetCard.ability.effect.value !=
-                      activeCard.ability.effect.spellChange.value
+                    activeCard.ability.effect.spellChange?.value != null &&
+                    immediateTargetCard.ability.effect.value != null
                   ) {
                     immediateTargetCard.ability.effect.value =
                       activeCard.ability.effect.spellChange.value;
-                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${immediateTargetCard!.id} to ${immediateTargetCard.ability.effect.value}`;
+                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.value}`;
+                    console.log("IT HAPPENED");
                   }
+                } else {
+                  updateEvent.updateLog += `${activeCard.id} had no valid target`;
                 }
                 break;
 

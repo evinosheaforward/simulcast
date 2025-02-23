@@ -44,7 +44,7 @@ export const UpdateLog: React.FC = () => {
         ref={scrollRef}
         className="w-full max-w-md justify-center text-center text-white border-gray-700 rounded align-bottom h-[98px] overflow-y-auto bg-gray-800"
       >
-        <p key="init">Game Log</p>
+        <p key={gameData.updateLog.join()}>Game Log</p>
         {gameData.updateLog.map((log, index) => (
           <p key={index.toString()}>
             {log}
