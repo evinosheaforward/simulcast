@@ -322,7 +322,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Book",
-    content: "Draw 2 more cards next turn",
+    content: "Draw 2 more cards next turn.",
     cost: 2,
     time: 2,
     ability: {
@@ -363,7 +363,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Axe",
-    content: "Your opponent draws 2 fewer cards next turn",
+    content: "Your opponent draws 2 fewer cards next turn.",
     cost: 3,
     time: 2,
     ability: {
@@ -378,7 +378,7 @@ export const Deck: Card[] = [
   },
   {
     id: "Sword",
-    content: "Add 2 to the value of your next damage spell this turn",
+    content: "Add 2 to the value of your next damage spell this turn.",
     cost: 1,
     time: 2,
     ability: {
@@ -450,7 +450,7 @@ export const Deck: Card[] = [
   {
     id: "Wand",
     content: "Increase the value by 1 for your spells this turn.",
-    cost: 1,
+    cost: 2,
     time: 3,
     ability: {
       effect: {
@@ -647,6 +647,105 @@ export const Deck: Card[] = [
       },
     },
   },
+  {
+    id: "Well",
+    content: "Gain 2 mana at the end of the next two rounds.",
+    cost: 2,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.MANA,
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 3,
+      },
+      condition: {
+        type: TargetTypes.EXPIRATION,
+        eval: Evaluation.LESS,
+        value: 3,
+      },
+    },
+  },
+  {
+    id: "Moon",
+    content:
+      "Counter all spells your opponent plays that have lower than 3 time this turn",
+    cost: 4,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_COUNTER,
+      },
+      trigger: {
+        type: TargetTypes.SPELL,
+        targetPlayer: PlayerTargets.OPPONENT,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      },
+      condition: {
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_TIME,
+        eval: Evaluation.LESS,
+        value: 3,
+      },
+    },
+  },
+  {
+    id: "Harp",
+    content: "Add 1 to the value of your healing spells this turn.",
+    cost: 2,
+    time: 3,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.SPELL,
+        value: 1,
+      },
+      trigger: {
+        type: TargetTypes.HEALTH,
+      },
+      expiration: {
+        numActivations: 1,
+        type: AbilityExpirations.END_OF_ROUND,
+      },
+    },
+  },
+  {
+    id: "Blood",
+    content: "Change your healing spells to damage spells this turn.",
+    cost: 3,
+    time: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_TYPE,
+        spellChange: {
+          targetPlayer: PlayerTargets.OPPONENT,
+          type: TargetTypes.DAMAGE,
+        },
+      },
+      trigger: {
+        type: TargetTypes.HEALTH,
+        targetPlayer: PlayerTargets.SELF,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      },
+    },
+  },
+
   /* ------- NEW CARD NEED ART ---------- //
   {
     id: "Vortex",
@@ -663,23 +762,12 @@ export const Deck: Card[] = [
       }
     }
   },
-  
-  
-  ,
-  
-  
-  */
-
   /* Card ideas:
     - devestation: remove all cards from the board? 4/6
-    - well
-    - crypt
-    - might
     - lake
     - death
     - virus
     - bird
-    - harp
     - meat
   {
     "id": "Mirror",

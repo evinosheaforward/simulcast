@@ -680,6 +680,11 @@ class RulesEngine {
       if (
         triggeredCard.ability.effect.subtype === TargetSubTypes.SPELL_COUNTER
       ) {
+        await new FrontEndUpdate(
+          this.activePlayer,
+          null,
+          `${triggeredCard.id} countered ${activeCard.id}`,
+        ).send(io, this.gameId, 800);
         resolves = false;
       } else {
         // resolve the triggered ability

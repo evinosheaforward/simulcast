@@ -13,7 +13,8 @@ const GameOptions: React.FC = () => {
     gameStore.createGame(true);
   };
 
-  const handleJoinGame = () => {
+  const handleJoinGame = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     console.log(`try join game with id: ${joinGameId}`);
     if (!joinGameId) return;
     gameStore.joinGame(joinGameId);

@@ -140,7 +140,7 @@ export function handleSocketConnection(io: Server, socket: Socket) {
         // After resolution, reset submissions and deal new hands for the next round
         game.newRound(io);
       } else {
-        socket.emit("waitingForOpponent", game);
+        console.log("Waiting for second player to submit");
       }
     },
   );

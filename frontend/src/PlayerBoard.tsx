@@ -219,8 +219,7 @@ const PlayerBoard: React.FC = () => {
 
       <div className="text-center justify-center text-white">
         <p className="mb-2 font-bold">
-          {!gameData.gameStatus ||
-          gameData.gameStatus === "WAITING_FOR_OPPONENT"
+          {!gameData.gameId || gameData.gameStatus === "WAITING_FOR_OPPONENT"
             ? "Game hasn't started"
             : gameData.gameOver
               ? "Game over"
