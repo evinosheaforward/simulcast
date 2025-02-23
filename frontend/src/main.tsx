@@ -5,9 +5,11 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import "./index.css";
 import PlayerBoard from "./PlayerBoard";
-import Root from "./routes/root";
 import ErrorPage from "./error-page";
 import PageFrame from "./PageFrame";
+import CreateAccount from "./routes/CreateAccount";
+import Login from "./routes/Login";
+import Root from "./routes/Root";
 
 const router = createBrowserRouter([
   {
@@ -18,6 +20,17 @@ const router = createBrowserRouter([
   {
     path: "/game",
     element: <PlayerBoard />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+    errorElement: <ErrorPage />,
+  },
+
+  {
+    path: "/signup",
+    element: <CreateAccount />,
     errorElement: <ErrorPage />,
   },
 ]);

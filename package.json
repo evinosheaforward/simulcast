@@ -18,12 +18,13 @@
     "backend:all": "cd backend && npm run all",
     "server": "cd backend && npm run server"
   },
-  "workspaces": ["common"],
+  "workspaces": [
+    "common"
+  ],
   "devDependencies": {
     "concurrently": "^7.6.0",
     "ts-node-dev": "^2.0.0"
   },
   "dependencies": {
-    "uuid": "^11.0.5"
   }
 }
