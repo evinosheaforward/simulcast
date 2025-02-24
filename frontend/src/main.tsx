@@ -4,12 +4,14 @@ import * as ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import "./index.css";
-import PlayerBoard from "./PlayerBoard";
+import PlayerBoard from "./routes/PlayerBoard";
 import ErrorPage from "./error-page";
 import PageFrame from "./PageFrame";
 import CreateAccount from "./routes/CreateAccount";
 import Login from "./routes/Login";
 import Root from "./routes/Root";
+import DecksListPage from "./routes/DeckList";
+import DeckBuilderPage from "./routes/DeckEditor";
 
 const router = createBrowserRouter([
   {
@@ -20,6 +22,16 @@ const router = createBrowserRouter([
   {
     path: "/game",
     element: <PlayerBoard />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/decks",
+    element: <DecksListPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/editDecks",
+    element: <DeckBuilderPage />,
     errorElement: <ErrorPage />,
   },
   {

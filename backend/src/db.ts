@@ -1,10 +1,10 @@
 // db.ts
 import knex from "knex";
-import knexfile from "./knexfile";
+import knexConfig from "../knexfile";
 
 // Select the proper config based on NODE_ENV, defaulting to 'development'
 const environment = process.env.NODE_ENV || "development";
-const config = knexfile[environment];
+const config = knexConfig[environment];
 
 const db = knex(config);
 

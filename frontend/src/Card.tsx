@@ -5,7 +5,7 @@ import { getSnapshot } from "mobx-state-tree";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { DragOverlay } from "@dnd-kit/core";
-import { Card, CardSnapshot } from "./GameStore";
+import { Card, CardSnapshot } from "./models/GameStore";
 
 interface CardComponentProps {
   card: Card;

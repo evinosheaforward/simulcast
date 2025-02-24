@@ -15,6 +15,7 @@ import {
   colors,
   animals,
 } from "unique-names-generator";
+import { urlOf } from "../Utilities";
 
 const randomName = () => {
   return uniqueNamesGenerator({
@@ -22,13 +23,6 @@ const randomName = () => {
     separator: "-", // use '-' to join words
     length: 2, // number of words
   });
-};
-
-const BACKEND_URL: string =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-
-const urlOf = (endpoint: string): string => {
-  return `${BACKEND_URL}${endpoint}`;
 };
 
 export const CardModel = types.model("Card", {
@@ -49,25 +43,11 @@ export const AbilityQueueItemModel = types.model("AbilityQueueItem", {
   playerId: types.string,
 });
 
-export const GameStoreBase = types
+export const MoveableCardStoreBase = types
   .model("GameStore", {
-    gameId: types.optional(types.string, ""),
-    playerId: types.optional(types.string, ""),
     hand: types.optional(types.array(CardModel), []),
     dropzone: types.optional(types.array(CardModel), []),
-    opponentDropzone: types.optional(types.array(CardModel), []),
-    opponentPlayerId: types.optional(types.string, ""),
-    gameStatus: types.optional(types.string, "waiting"),
-    health: types.optional(types.number, Number.MIN_SAFE_INTEGER),
-    opponentHealth: types.optional(types.number, Number.MIN_SAFE_INTEGER),
-    goesFirst: types.optional(types.maybeNull(types.boolean), null),
-    mana: types.optional(types.number, Number.MIN_SAFE_INTEGER),
-    opponentMana: types.optional(types.number, Number.MIN_SAFE_INTEGER),
-    gameOver: types.optional(types.boolean, false),
-    tick: types.optional(types.maybeNull(types.string), null),
-    updateLog: types.optional(types.array(types.string), []),
-    abilityQueue: types.optional(types.array(AbilityQueueItemModel), []),
-    error: types.maybe(types.string),
+    mana: types.optional(types.number, Number.MAX_SAFE_INTEGER),
   })
   .volatile((_) => ({
     socket: null as Socket | null,
@@ -81,15 +61,6 @@ export const GameStoreBase = types
     },
   }))
   .actions((self) => ({
-    setGameId(newGameId: string) {
-      self.gameId = newGameId;
-    },
-    setPlayerId(newPlayerId: string) {
-      self.playerId = newPlayerId;
-    },
-    setOpponentPlayerId(newPlayerId: string) {
-      self.opponentPlayerId = newPlayerId;
-    },
     setHand(newHand: typeof self.hand) {
       console.log("new hand is:", JSON.stringify(newHand));
       self.hand = newHand;
@@ -107,51 +78,6 @@ export const GameStoreBase = types
     clearDropzone() {
       self.dropzone.replace([]);
     },
-    setOpponentDropzone(
-      newOpponentDropzone: typeof self.opponentDropzone | null | undefined,
-    ) {
-      console.log("set opp dropzone", newOpponentDropzone);
-      if (newOpponentDropzone && newOpponentDropzone.length > 0) {
-        console.log("replace");
-        self.opponentDropzone.replace(newOpponentDropzone);
-      } else {
-        console.log("clear");
-        self.opponentDropzone.replace([]);
-      }
-    },
-    clearOpponentDropzone() {
-      self.opponentDropzone.replace([]);
-    },
-    setGameStatus(newStatus: string) {
-      self.gameStatus = newStatus;
-    },
-    setGoesFirst(goesFirst: boolean) {
-      self.goesFirst = goesFirst;
-    },
-    setHealth(newHealth: number) {
-      self.health = newHealth;
-    },
-    setOpponentHealth(newHealth: number) {
-      self.opponentHealth = newHealth;
-    },
-    setMana(newMana: number) {
-      self.mana = newMana;
-    },
-    setOpponentMana(newMana: number) {
-      self.opponentMana = newMana;
-    },
-    setError(newError: string | undefined) {
-      self.error = newError;
-    },
-    setGameOver(over: boolean) {
-      self.gameOver = over;
-    },
-    setTick(playerId: string) {
-      self.tick = playerId;
-    },
-    setUpdateLog(log: string) {
-      self.updateLog.push(log);
-    },
     setZone(zone: string, update: typeof self.hand) {
       if (zone === "hand") {
         self.hand.replace(update);
@@ -159,78 +85,163 @@ export const GameStoreBase = types
         self.dropzone.replace(update);
       }
     },
-    setAbilityQueue(abilityQueue: { cardId: string; playerId: string }[]) {
-      self.abilityQueue.replace(abilityQueue);
+    setMana(newMana: number) {
+      self.mana = newMana;
     },
   }));
 
-const GameStoreReorderable = GameStoreBase.actions((self) => ({
-  reorderCardWithinZone(zone: string, cardId: string, overId: string) {
-    const zoneItems = self.getZone(zone).slice();
-    const currentIndex = zoneItems.findIndex((card) => card.id === cardId);
-    if (currentIndex === -1) return; // Card not found, do nothing.
+export const MoveableCardStoreReorderable = MoveableCardStoreBase.actions(
+  (self) => ({
+    reorderCardWithinZone(zone: string, cardId: string, overId: string) {
+      const zoneItems = self.getZone(zone).slice();
+      const currentIndex = zoneItems.findIndex((card) => card.id === cardId);
+      if (currentIndex === -1) return; // Card not found, do nothing.
 
-    // Remove the card from its current position.
+      // Remove the card from its current position.
 
-    let targetIndex: number;
-    if (overId === zone) {
-      targetIndex = zoneItems.length;
-    } else {
-      targetIndex = zoneItems.findIndex((card) => card.id === overId);
-      if (targetIndex === -1) {
+      let targetIndex: number;
+      if (overId === zone) {
+        targetIndex = zoneItems.length;
+      } else {
+        targetIndex = zoneItems.findIndex((card) => card.id === overId);
+        if (targetIndex === -1) {
+          targetIndex = zoneItems.length;
+        }
+      }
+      let [movedCard] = zoneItems.splice(currentIndex, 1);
+
+      if (targetIndex < 0) {
+        targetIndex = 0;
+      } else if (targetIndex >= zoneItems.length) {
         targetIndex = zoneItems.length;
       }
-    }
-    let [movedCard] = zoneItems.splice(currentIndex, 1);
+      zoneItems.splice(targetIndex, 0, movedCard);
+      self.setZone(zone, zoneItems as typeof self.hand);
+    },
 
-    if (targetIndex < 0) {
-      targetIndex = 0;
-    } else if (targetIndex >= zoneItems.length) {
-      targetIndex = zoneItems.length;
-    }
-    zoneItems.splice(targetIndex, 0, movedCard);
-    self.setZone(zone, zoneItems as typeof self.hand);
-  },
-
-  moveCardBetweenZones(
-    sourceZone: string,
-    targetZone: string,
-    activeCardId: string,
-    overCardId: string,
-    cardCost: number,
-  ) {
-    const sourceItems = self.getZone(sourceZone);
-    const targetItems = self.getZone(targetZone);
-    const sourceIndex = sourceItems.findIndex(
-      (card) => card.id === activeCardId,
-    );
-    if (sourceIndex === -1) {
-      console.log("move between zones return cause source index -1");
-      return;
-    }
-    const movedCard = CardModel.create(
-      getSnapshot(detach(sourceItems[sourceIndex])),
-    );
-
-    let targetIndex = targetItems.findIndex((card) => card.id === overCardId);
-    console.log(`move between: source ${sourceIndex}, target: ${targetIndex}`);
-    if (
-      targetIndex === undefined ||
-      targetIndex < 0 ||
-      targetIndex >= targetItems.length - 1
+    moveCardBetweenZones(
+      sourceZone: string,
+      targetZone: string,
+      activeCardId: string,
+      overCardId: string,
+      cardCost: number,
     ) {
-      // If no target index is provided or it's out-of-range, push to the end.
-      targetItems.push(movedCard);
-    } else {
-      targetItems.splice(targetIndex, 0, movedCard);
-    }
-    if (targetZone === "dropzone") {
-      self.mana -= cardCost;
-    } else {
-      self.mana += cardCost;
-    }
-  },
-}));
+      const sourceItems = self.getZone(sourceZone);
+      const targetItems = self.getZone(targetZone);
+      const sourceIndex = sourceItems.findIndex(
+        (card) => card.id === activeCardId,
+      );
+      if (sourceIndex === -1) {
+        console.log("move between zones return cause source index -1");
+        return;
+      }
+      const movedCard = CardModel.create(
+        getSnapshot(detach(sourceItems[sourceIndex])),
+      );
+
+      let targetIndex = targetItems.findIndex((card) => card.id === overCardId);
+      console.log(
+        `move between: source ${sourceIndex}, target: ${targetIndex}`,
+      );
+      if (
+        targetIndex === undefined ||
+        targetIndex < 0 ||
+        targetIndex >= targetItems.length - 1
+      ) {
+        // If no target index is provided or it's out-of-range, push to the end.
+        targetItems.push(movedCard);
+      } else {
+        targetItems.splice(targetIndex, 0, movedCard);
+      }
+      if (targetZone === "dropzone") {
+        self.mana -= cardCost;
+      } else {
+        self.mana += cardCost;
+      }
+    },
+  }),
+);
+
+const GameStoreReorderable = types.compose(
+  "GameStoreReorderable",
+  MoveableCardStoreReorderable,
+  types
+    .model("GameStore", {
+      gameId: types.optional(types.string, ""),
+      playerId: types.optional(types.string, ""),
+      opponentDropzone: types.optional(types.array(CardModel), []),
+      opponentPlayerId: types.optional(types.string, ""),
+      gameStatus: types.optional(types.string, "waiting"),
+      health: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+      opponentHealth: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+      goesFirst: types.optional(types.maybeNull(types.boolean), null),
+      opponentMana: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+      gameOver: types.optional(types.boolean, false),
+      tick: types.optional(types.maybeNull(types.string), null),
+      updateLog: types.optional(types.array(types.string), []),
+      abilityQueue: types.optional(types.array(AbilityQueueItemModel), []),
+      error: types.maybe(types.string),
+    })
+    .volatile((_) => ({
+      socket: null as Socket | null,
+    }))
+    .actions((self) => ({
+      setGameId(newGameId: string) {
+        self.gameId = newGameId;
+      },
+      setPlayerId(newPlayerId: string) {
+        self.playerId = newPlayerId;
+      },
+      setOpponentPlayerId(newPlayerId: string) {
+        self.opponentPlayerId = newPlayerId;
+      },
+      setOpponentDropzone(
+        newOpponentDropzone: typeof self.opponentDropzone | null | undefined,
+      ) {
+        console.log("set opp dropzone", newOpponentDropzone);
+        if (newOpponentDropzone && newOpponentDropzone.length > 0) {
+          console.log("replace");
+          self.opponentDropzone.replace(newOpponentDropzone);
+        } else {
+          console.log("clear");
+          self.opponentDropzone.replace([]);
+        }
+      },
+      clearOpponentDropzone() {
+        self.opponentDropzone.replace([]);
+      },
+      setGameStatus(newStatus: string) {
+        self.gameStatus = newStatus;
+      },
+      setGoesFirst(goesFirst: boolean) {
+        self.goesFirst = goesFirst;
+      },
+      setHealth(newHealth: number) {
+        self.health = newHealth;
+      },
+      setOpponentHealth(newHealth: number) {
+        self.opponentHealth = newHealth;
+      },
+      setOpponentMana(newMana: number) {
+        self.opponentMana = newMana;
+      },
+      setError(newError: string | undefined) {
+        self.error = newError;
+      },
+      setGameOver(over: boolean) {
+        self.gameOver = over;
+      },
+      setTick(playerId: string) {
+        self.tick = playerId;
+      },
+      setUpdateLog(log: string) {
+        self.updateLog.push(log);
+      },
+      setAbilityQueue(abilityQueue: { cardId: string; playerId: string }[]) {
+        self.abilityQueue.replace(abilityQueue);
+      },
+    })),
+);
 
 const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
   /**

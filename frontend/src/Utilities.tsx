@@ -1,7 +1,8 @@
 import { useObservable } from "mst-use-observable";
 import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
-import gameStore from "./GameStore";
+import gameStore from "./models/GameStore";
+import { DeckMap } from "simulcast-common";
 
 interface NotificationProps {
   message: string;
@@ -55,3 +56,14 @@ export const UpdateLog: React.FC = () => {
     </div>
   );
 };
+
+export const BACKEND_URL: string =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+export const urlOf = (endpoint: string): string => {
+  return `${BACKEND_URL}${endpoint}`;
+};
+
+export const sortedDeck = structuredClone(
+  [...DeckMap.values()].sort((a, b) => a.id.localeCompare(b.id)),
+);
