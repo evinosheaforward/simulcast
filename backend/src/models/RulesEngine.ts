@@ -7,7 +7,7 @@ import {
   Condition,
   DeckMap,
   Evaluation,
-  NewDeck,
+  newDeck,
   PlayerTargets,
   populate,
   TargetSubTypes,
@@ -15,7 +15,9 @@ import {
   CARDS_PER_TURN,
   MANA_PER_TURN,
   randomName,
+  randomDeck,
 } from "simulcast-common";
+import { getUserDeck } from "./DeckStore";
 
 export enum GameState {
   WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",
@@ -31,27 +33,29 @@ class Game {
   players: Player[];
   state: GameState;
   rulesEngine: RulesEngine;
-  decks = new Map<string, string[]>();
+  decks = new Map<string, { current: string[]; full: string[] }>();
   isBotGame: boolean = false;
   botPlayerId?: string;
 
   constructor(id: string) {
     this.id = id;
-    const hostPlayer: Player = {
-      id: randomName(),
-      hand: [],
-      dropzone: [],
-      submitted: false,
-      health: STARTING_HEALTH,
-      mana: 0,
-      cardDraw: 0,
-    };
-    this.players = [hostPlayer];
+    this.players = [];
     this.state = GameState.WAITING_FOR_PLAYER;
     this.rulesEngine = new RulesEngine(id);
   }
 
-  addPlayer() {
+  async addPlayer(uid: string | undefined) {
+    let playerDeck: string[];
+    if (!uid) {
+      playerDeck = randomDeck();
+    } else {
+      const tmpDeck = await getUserDeck(uid);
+      if (!tmpDeck) {
+        playerDeck = randomDeck();
+      } else {
+        playerDeck = tmpDeck;
+      }
+    }
     const joinPlayer: Player = {
       id: randomName(),
       hand: [],
@@ -62,6 +66,10 @@ class Game {
       cardDraw: 0,
     };
     this.players.push(joinPlayer);
+    this.decks.set(joinPlayer.id, {
+      full: playerDeck,
+      current: [...playerDeck],
+    });
     this.rulesEngine.goesFirst =
       Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
     return joinPlayer;
@@ -102,9 +110,6 @@ class Game {
       io,
       this.rulesEngine.gameId,
     );
-    this.players.forEach((p) => {
-      this.decks.set(p.id, NewDeck());
-    });
     this.newRound(io);
   }
 
@@ -170,14 +175,17 @@ class Game {
       delta + Math.max(CARDS_PER_TURN - currentHand.length, 1),
       0,
     );
-    let array = this.decks.get(playerId)!;
+    let array = this.decks.get(playerId)!.current;
     const result = [...currentHand.map((c) => c.id)];
 
     for (let i = 0; i < drawCount; i++) {
       if (array.length === 0) {
-        this.decks.set(playerId, NewDeck(result));
-        array = this.decks.get(playerId)!;
-        // while deck in hand
+        this.decks.get(playerId)!.current = newDeck(
+          currentHand.map((c) => c.id),
+          this.decks.get(playerId)!.full,
+        );
+        array = this.decks.get(playerId)!.current;
+        // whole deck in hand
         if (array.length === 0) {
           break;
         }

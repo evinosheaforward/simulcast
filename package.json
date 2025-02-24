@@ -5,10 +5,10 @@
   "scripts": {
     "lint:fix": "concurrently \"npm run frontend:lint\" \"npm run backend:lint\" \"npm run common:lint\"",
     "build": "concurrently \"npm run frontend:build\" \"npm run backend:build\"",
-    "start": "npm run common:build && concurrently \"npm run server\" \"npm run client\"",
+    "start": "npm run common:build && concurrently \"npm run server\" \"npm run client\" \"firebase emulators:start --only auth\" ",
     "common:lint": "cd common && npm run lint:fix",
     "common:build": "cd common && npm run build",
-    "all": "npm run build && concurrently \"npm run frontend:all\" \"npm run backend:all\"",
+    "all": "npm run build && concurrently \"npm run frontend:all\" \"npm run backend:all\" \"firebase emulators:start --only auth\" ",
     "frontend:lint": "cd frontend && npm run lint:fix",
     "frontend:build": "cd frontend && npm run build",
     "client": "cd frontend && npm run dev",
@@ -26,5 +26,6 @@
     "ts-node-dev": "^2.0.0"
   },
   "dependencies": {
+    "firebase-tools": "^13.31.2"
   }
 }

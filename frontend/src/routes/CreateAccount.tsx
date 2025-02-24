@@ -1,7 +1,6 @@
 // CreateAccount.tsx
 import React, { useState } from "react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "../FirebaseConfig";
+import { register } from "../Firebase";
 
 const CreateAccount: React.FC = () => {
   const [username, setUsername] = useState<string>("");
@@ -10,73 +9,80 @@ const CreateAccount: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    try {
-      // Create user with email and password
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password,
-      );
-
-      // Update the user profile with the chosen username
-      await updateProfile(userCredential.user, { displayName: username });
-
-      console.log("Account created for:", userCredential.user.email);
-    } catch (err: any) {
-      setError(err.message || "An error occurred while creating the account.");
-    } finally {
-      setLoading(false);
-    }
+    await register(email, password, setError);
+    setLoading(false);
   };
 
   return (
-    <div className="create-account-container">
-      <h2>Create Account</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="username">Username:</label>
-          <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-        </div>
+    <div className="min-h-screen">
+      <div className="items-center justify-center p-4 grid auto-rows-auto gap-4 place-items-center">
+        <h2 className="text-white text-2xl font-bold">Create Account</h2>
+        <form
+          onSubmit={handleRegister}
+          className="grid auto-rows-auto gap-4 place-items-center font-bold"
+        >
+          <div className="flex flex-col w-50">
+            <label htmlFor="username" className="text-white mb-1">
+              Username:
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="bg-gray-700 text-center text-white border border-gray-600 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
 
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+          <div className="flex flex-col w-50">
+            <label htmlFor="email" className="text-white mb-1">
+              Email:
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="bg-gray-700 text-center text-white border border-gray-600 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
 
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+          <div className="flex flex-col w-50">
+            <label htmlFor="password" className="text-white mb-1">
+              Password:
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="bg-gray-700 text-center text-white border border-gray-600 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && <p className="text-red-500">{error}</p>}
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Creating Account..." : "Create Account"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-none w-50 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
+          >
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
+        </form>
+        <body className="justify-center max-w-sm">
+          You do not need to make an account to play! Making an account allows
+          you to build your own decks. If you are not logged in, your deck will
+          be selected randomly.
+        </body>
+      </div>
     </div>
   );
 };

@@ -7,6 +7,9 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+# local db
+dev.sqlite3
+
 # Firebase cache
 .firebase/
 
