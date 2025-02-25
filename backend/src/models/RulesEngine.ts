@@ -16,6 +16,7 @@ import {
   MANA_PER_TURN,
   randomName,
   randomDeck,
+  MAX_DECK_CYCLES,
 } from "simulcast-common";
 import { getUserDeck } from "./DeckStore";
 
@@ -33,7 +34,10 @@ class Game {
   players: Player[];
   state: GameState;
   rulesEngine: RulesEngine;
-  decks = new Map<string, { current: string[]; full: string[] }>();
+  decks = new Map<
+    string,
+    { current: string[]; full: string[]; cycle: number }
+  >();
   isBotGame: boolean = false;
   botPlayerId?: string;
 
@@ -70,6 +74,7 @@ class Game {
     this.decks.set(joinPlayer.id, {
       full: playerDeck,
       current: [...playerDeck],
+      cycle: 1,
     });
     if (this.players.length === 2) {
       this.rulesEngine.goesFirst =
@@ -96,6 +101,7 @@ class Game {
     this.decks.set(botPlayer.id, {
       full: botDeck,
       current: [...botDeck],
+      cycle: 1,
     });
     this.rulesEngine.goesFirst =
       Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
@@ -119,21 +125,40 @@ class Game {
       io,
       this.rulesEngine.gameId,
     );
-    this.newRound(io);
+    await this.newRound(io);
   }
 
-  newRound(io: Server) {
-    this.players.forEach((p) => {
-      p.submitted = false;
-      p.hand = this.drawHand(p.cardDraw, p.id, p.hand);
-      p.mana = Math.max(p.mana + MANA_PER_TURN, 0);
-      p.cardDraw = 0;
-      p.dropzone = [];
-      [p.opponentHealth, p.opponentMana] = this.players
-        .filter((other) => other.id !== p.id)
-        .map((other) => [other.health, other.mana])[0];
-      p.goesFirst = p.id == this.rulesEngine.goesFirst;
-    });
+  async newRound(io: Server) {
+    try {
+      this.players.forEach((p) => {
+        p.submitted = false;
+        p.hand = this.drawHand(p.cardDraw, p.id, p.hand);
+        p.mana = Math.max(p.mana + MANA_PER_TURN, 0);
+        p.cardDraw = 0;
+        p.dropzone = [];
+        [p.opponentHealth, p.opponentMana] = this.players
+          .filter((other) => other.id !== p.id)
+          .map((other) => [other.health, other.mana])[0];
+        p.goesFirst = p.id == this.rulesEngine.goesFirst;
+      });
+    } catch (error) {
+      if (error instanceof PlayerDiedError) {
+        console.log(`Player died: ${error.playerId}`);
+        io.to(this.id).emit("gameOver", {
+          winner: this.players.filter((p) => p.id != error.playerId)[0].id,
+        });
+        await new FrontEndUpdate(
+          null,
+          null,
+          `${error.playerId}: ${error.message}`,
+        ).send(io, this.id);
+        for (const playerId of this.players.map((p) => p.id)) {
+          io.to(playerId).disconnectSockets();
+        }
+      } else {
+        console.log("FATAL ERROR: ", error);
+      }
+    }
 
     this.state = GameState.PLAY;
     if (this.isBotGame) {
@@ -189,6 +214,11 @@ class Game {
 
     for (let i = 0; i < drawCount; i++) {
       if (array.length === 0) {
+        if (this.decks.get(playerId)!.cycle === MAX_DECK_CYCLES) {
+          throw new PlayerDiedError(
+            `Finished ${MAX_DECK_CYCLES} Deck Cycles, they lose. Game Over`,
+          );
+        }
         this.decks.get(playerId)!.current = newDeck(
           currentHand.map((c) => c.id),
           this.decks.get(playerId)!.full,
@@ -197,6 +227,8 @@ class Game {
         // whole deck in hand
         if (array.length === 0) {
           break;
+        } else {
+          this.decks.get(playerId)!.current;
         }
       }
       const randomIndex = Math.floor(Math.random() * array.length);
@@ -466,9 +498,8 @@ class RulesEngine {
         await new FrontEndUpdate(
           null,
           null,
-          `${error.playerId} died - Game Over`,
-        );
-        io.to(this.gameId).disconnectSockets();
+          `${error.playerId}: ${error.message}`,
+        ).send(io, this.gameId);
         for (const playerId of this.players.map((p) => p.id)) {
           io.to(playerId).disconnectSockets();
         }
@@ -683,7 +714,10 @@ class RulesEngine {
 
     this.players.forEach((p) => {
       if (p.health <= 0) {
-        throw new PlayerDiedError(p.id);
+        throw new PlayerDiedError(
+          p.id,
+          "Health reached 0, they lose. Game Over.",
+        );
       }
     });
   }
