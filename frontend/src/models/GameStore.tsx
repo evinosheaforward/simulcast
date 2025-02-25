@@ -48,7 +48,7 @@ export const MoveableCardStoreBase = types
   .model("GameStore", {
     hand: CardArrayModel,
     dropzone: CardArrayModel,
-    mana: types.optional(types.number, Number.MAX_SAFE_INTEGER),
+    mana: types.optional(types.number, 0),
   })
   .volatile((_) => ({
     socket: null as Socket | null,

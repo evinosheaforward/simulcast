@@ -16,10 +16,11 @@ export const DeckStore = DeckStoreBase.actions((self) => ({
   setName(newName: string) {
     self.name = newName;
   },
-  // The submit action calls the /api/deck/addOrUpdate API.
+  setDeckId(deckId: string) {
+    self.deckId = deckId;
+  },
   submit: flow(function* submit() {
     try {
-      // If no deckId exists, generate one (using crypto.randomUUID if available)
       if (!self.deckId) {
         self.deckId = crypto.randomUUID();
       }

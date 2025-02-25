@@ -82,7 +82,7 @@ export type Card = {
   cost: number;
   time: number;
   ability: Ability;
-  timer?: number;
+  timer?: number | null;
 };
 
 export interface ActiveAbility {

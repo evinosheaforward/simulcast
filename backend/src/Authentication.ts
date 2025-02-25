@@ -17,6 +17,7 @@ export const strictAuth = async (
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("strict auth: no token provided");
     res.status(401).json({ error: "No token provided" });
     return;
   }
@@ -24,6 +25,7 @@ export const strictAuth = async (
     const decodedToken = await admin
       .auth()
       .verifyIdToken(authHeader.split(" ")[1]);
+    console.log("strict auth: token validated");
     req.user = decodedToken; // attach user info to request
     next();
   } catch (error: any) {
@@ -38,11 +40,14 @@ export const optionalAuth = async (
   next: NextFunction,
 ) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("optional auth: no token provided");
     req.user = undefined;
   } else {
     try {
-      const decodedToken = await admin.auth().verifyIdToken(authHeader);
+      const decodedToken = await admin
+        .auth()
+        .verifyIdToken(authHeader.split(" ")[1]);
       req.user = decodedToken; // attach user info if valid
     } catch (error) {
       console.log("Optional auth failed:", error);

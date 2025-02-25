@@ -27,7 +27,7 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
       <div className="min-h-screen bg-gradient-to-br from-gray-600 rounded-t to-black text-white">
         <div className="grid place-items-center text-center">
           <div className="w-full max-w-4xl bg-gray-900 relative text-center text-white">
-            <h1 className="justify-center text-4xl font-extrabold text-white text-center">
+            <h1 className="justify-center text-4xl font-extrabold text-white text-center mt-1">
               <a href="/">SimulCast</a>
             </h1>
             <div className="inline-block group absolute right-0 top-0 w-24 mr-3">

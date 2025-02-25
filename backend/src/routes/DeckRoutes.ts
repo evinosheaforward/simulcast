@@ -46,6 +46,7 @@ deckRoutes.put(
   "/addOrUpdate",
   strictAuth,
   async (req: Request, res: Response) => {
+    console.log("/api/deck/addOrUpdate");
     try {
       const userId = req.user!.uid;
       const { deckId, deckName, deck } = req.body;
@@ -57,6 +58,7 @@ deckRoutes.put(
       }
       const userDeck = await putUserDeck(userId, deckId, deckName, deck);
       res.status(200).json(userDeck);
+      console.log("/api/deck/addOrUpdate success");
     } catch (error) {
       console.error("Error adding or updating deck:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -68,7 +70,8 @@ deckRoutes.put(
  * GET /deck
  * Retrieves the active deck for the authenticated user.
  */
-deckRoutes.get("/getDeck", strictAuth, async (req: Request, res: Response) => {
+deckRoutes.get("/get", strictAuth, async (req: Request, res: Response) => {
+  console.log("/api/deck/get");
   try {
     const userId = req.user!.uid;
 
@@ -78,7 +81,8 @@ deckRoutes.get("/getDeck", strictAuth, async (req: Request, res: Response) => {
       res.status(404).json({ error: "Active deck not found" });
       return;
     }
-    res.status(200).json({ deck });
+    res.status(200).json(deck);
+    console.log("/api/deck/get success");
   } catch (error) {
     console.error("Error retrieving deck:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -89,21 +93,17 @@ deckRoutes.get("/getDeck", strictAuth, async (req: Request, res: Response) => {
  * GET /deck
  * Retrieves the active deck for the authenticated user.
  */
-deckRoutes.get(
-  "/listDecks",
-  strictAuth,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = req.user!.uid;
+deckRoutes.get("/list", strictAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.uid;
 
-      const decks = await getDecks(userId);
-      res.status(200).json({ decks });
-    } catch (error) {
-      console.error("Error retrieving decks:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  },
-);
+    const decks = await getDecks(userId);
+    res.status(200).json({ decks });
+  } catch (error) {
+    console.error("Error retrieving decks:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 /**
  * DELETE /deck

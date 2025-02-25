@@ -11,57 +11,70 @@ import { useObservable } from "mst-use-observable";
 import { CardArrayModel, CardSnapshot } from "../models/GameStore";
 import deckStore, { IDeckStore } from "../models/DeckModel";
 import { getSnapshot } from "mobx-state-tree";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { Deck, DeckMap } from "simulcast-common";
 import { CardDragOverlayComponent } from "../Card";
-import { requestWithAuth } from "../Firebase";
+import { auth, requestWithAuth } from "../Firebase";
 
 type ActiveCard = CardSnapshot | null;
 
-const DeckBuilderPage: React.FC = () => {
+interface DeckResponse {
+  deck: string[];
+  deckName: string;
+  deckId: string;
+}
+
+const DeckBuilderPageInterface: React.FC = () => {
   const [searchParams] = useSearchParams();
   const deckId = searchParams.get("deckId");
   const deckData = useObservable(deckStore);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingDeck, setLoadingDeck] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
   const [activeCard, setActiveCard] = useState<ActiveCard>(null);
 
   useEffect(() => {
     async function fetchDeck() {
-      if (deckId) {
-        try {
-          // Make a GET request to your API endpoint using the deckId.
-          const response = await requestWithAuth(
-            "GET",
-            `/api/deck/get?deckId=${deckId}`,
+      try {
+        // Make a GET request to your API endpoint using the deckId.
+        const response = await requestWithAuth(
+          "GET",
+          `/api/deck/get?deckId=${deckId}`,
+        );
+        if (response.ok) {
+          const data = (await response.json()) as DeckResponse;
+
+          console.log("data.deck is:", JSON.stringify(data.deck));
+          deckData.setDropzone(
+            structuredClone(
+              data.deck.map((c: string) => DeckMap.get(c)!),
+            ) as any,
           );
-          if (response.ok) {
-            const data = await response.json();
-            deckData.setDropzone(
-              CardArrayModel.create(
-                structuredClone(data.deck.map((c: string) => DeckMap.get(c))),
+          deckData.setHand(
+            structuredClone([
+              ...Deck.filter(
+                (c) => !data.deck.some((dc: string) => c.id == dc),
               ),
-            );
-            deckData.setHand(
-              CardArrayModel.create(
-                structuredClone([
-                  ...Deck.filter(
-                    (c) => !data.deck.some((dc: string) => c.id == dc),
-                  ),
-                ]),
-              ),
-            );
-          } else {
-            deckData.setHand(CardArrayModel.create(structuredClone([...Deck])));
-          }
-        } catch (error) {
-          console.error("Error fetching deck:", error);
+            ]) as any,
+          );
+          deckData.setName(data.deckName);
+          deckData.setDeckId(data.deckId);
+        } else {
           deckData.setHand(CardArrayModel.create(structuredClone([...Deck])));
         }
+      } catch (error) {
+        console.error("Error fetching deck:", error);
+        deckData.setHand(CardArrayModel.create(structuredClone([...Deck])));
       }
+      setLoadingDeck(false);
     }
-    fetchDeck();
+
+    if (deckId) {
+      setLoadingDeck(true);
+      const unsubscribe = auth.onAuthStateChanged(fetchDeck);
+      return () => unsubscribe();
+    }
   }, []);
 
   const getContainer = useCallback(
@@ -167,6 +180,11 @@ const DeckBuilderPage: React.FC = () => {
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    if (!deckData.name) {
+      setError("Deck must have a name");
+      setSubmitting(false);
+      return;
+    }
     if (deckData.dropzone.length < 20) {
       setError("Deck must be at least 20 cards");
       setSubmitting(false);
@@ -174,6 +192,7 @@ const DeckBuilderPage: React.FC = () => {
     }
     try {
       await deckData.submit();
+      setError("");
     } catch (_: any) {
       setError("Error submitting deck");
     } finally {
@@ -195,7 +214,10 @@ const DeckBuilderPage: React.FC = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Deck Builder</h2>
+      <h2 className="text-2xl font-bold mb-4">
+        Deck Builder
+        {loadingDeck ? " (Loading...)" : ""}
+      </h2>
       <div className="mb-4">
         <label className="block mb-1 font-bold">Deck Name</label>
         <input
@@ -239,6 +261,11 @@ const DeckBuilderPage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const DeckBuilderPage = () => {
+  const location = useLocation();
+  return <DeckBuilderPageInterface key={location.pathname} />;
 };
 
 export default DeckBuilderPage;

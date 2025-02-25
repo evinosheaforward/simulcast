@@ -126,7 +126,7 @@ export async function requestWithAuth(
   url: string,
   body?: string,
 ) {
-  let token = await auth?.currentUser?.getIdToken(true);
+  let token = await auth.currentUser?.getIdToken(true);
 
   let request: any;
   if (token) {

@@ -56,8 +56,9 @@ class Game {
         playerDeck = tmpDeck;
       }
     }
+    const name = randomName();
     const joinPlayer: Player = {
-      id: randomName(),
+      id: name,
       hand: [],
       dropzone: [],
       submitted: false,
@@ -70,15 +71,18 @@ class Game {
       full: playerDeck,
       current: [...playerDeck],
     });
-    this.rulesEngine.goesFirst =
-      Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
+    if (this.players.length === 2) {
+      this.rulesEngine.goesFirst =
+        Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
+    }
     return joinPlayer;
   }
 
   addBot() {
     this.isBotGame = true;
+    const name = "BOT-" + randomName();
     const botPlayer: Player = {
-      id: "BOT-" + randomName(),
+      id: name,
       hand: [],
       dropzone: [],
       submitted: false,
@@ -88,6 +92,11 @@ class Game {
     };
     this.players.push(botPlayer);
     this.botPlayerId = botPlayer.id;
+    const botDeck = randomDeck();
+    this.decks.set(botPlayer.id, {
+      full: botDeck,
+      current: [...botDeck],
+    });
     this.rulesEngine.goesFirst =
       Math.random() >= 0.5 ? this.players[0].id : this.players[1].id;
     return botPlayer;

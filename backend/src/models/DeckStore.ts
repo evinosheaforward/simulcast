@@ -105,13 +105,13 @@ export async function getUserDeck(userId: string): Promise<string[] | null> {
 export async function getDeck(userId: string, deckId: string): Promise<any> {
   try {
     const row = await db("user_decks")
-      .select("deck", "deck_name")
+      .select("deck", "deck_name", "deck_id")
       .where({ user_id: userId, deck_id: deckId })
       .first();
     if (row) {
       const deck =
         typeof row.deck === "string" ? JSON.parse(row.deck) : row.deck;
-      return { deck, name: row.deck_name };
+      return { deck: deck, deckName: row.deck_name, deckId: row.deck_id };
     } else {
       return null;
     }
@@ -130,9 +130,30 @@ export async function getDeck(userId: string, deckId: string): Promise<any> {
 export async function getDecks(userId: string): Promise<any> {
   try {
     const rows = await db("user_decks")
-      .select("deck_id", "deck_name")
-      .where("user_id", userId);
-    return rows || [];
+      .leftJoin(
+        "user_active_deck",
+        "user_decks.user_id",
+        "user_active_deck.user_id",
+      )
+      .select(
+        "user_decks.deck_id",
+        "user_decks.deck_name",
+        db.raw(
+          "CASE WHEN user_active_deck.deck_id = user_decks.deck_id THEN true ELSE false END as is_active",
+        ),
+      )
+      .where("user_decks.user_id", userId);
+
+    if (rows) {
+      return rows.map((row) => {
+        return {
+          deckId: row.deck_id,
+          deckName: row.deck_name,
+          isActive: row.is_active,
+        };
+      });
+    }
+    return [];
   } catch (error) {
     console.error("Error retrieving decks:", error);
     throw error;
