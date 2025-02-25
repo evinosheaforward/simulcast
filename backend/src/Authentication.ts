@@ -16,12 +16,14 @@ export const strictAuth = async (
   next: NextFunction,
 ) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(401).json({ error: "No token provided" });
     return;
   }
   try {
-    const decodedToken = await admin.auth().verifyIdToken(authHeader);
+    const decodedToken = await admin
+      .auth()
+      .verifyIdToken(authHeader.split(" ")[1]);
     req.user = decodedToken; // attach user info to request
     next();
   } catch (error: any) {

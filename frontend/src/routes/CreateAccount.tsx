@@ -1,19 +1,21 @@
 // CreateAccount.tsx
 import React, { useState } from "react";
 import { register } from "../Firebase";
+import { useNavigate } from "react-router-dom"; // or useHistory for react-router v5
 
 const CreateAccount: React.FC = () => {
-  const [username, setUsername] = useState<string>("");
+  //const [username, setUsername] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    await register(email, password, setError);
+    await register(email, password, setError, () => navigate("/"));
     setLoading(false);
   };
 
@@ -26,6 +28,7 @@ const CreateAccount: React.FC = () => {
           className="grid auto-rows-auto gap-4 place-items-center font-bold"
         >
           <div className="flex flex-col w-50">
+            {/* 
             <label htmlFor="username" className="text-white mb-1">
               Username:
             </label>
@@ -37,6 +40,7 @@ const CreateAccount: React.FC = () => {
               required
               className="bg-gray-700 text-center text-white border border-gray-600 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
+            */}
           </div>
 
           <div className="flex flex-col w-50">

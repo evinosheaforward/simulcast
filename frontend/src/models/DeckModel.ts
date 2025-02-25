@@ -1,6 +1,6 @@
 import { types, flow, Instance } from "mobx-state-tree";
-import { urlOf } from "../Utilities";
 import { MoveableCardStoreReorderable } from "../models/GameStore";
+import { requestWithAuth } from "..//Firebase";
 
 const DeckStoreBase = types.compose(
   "DeckStore",
@@ -16,7 +16,7 @@ export const DeckStore = DeckStoreBase.actions((self) => ({
   setName(newName: string) {
     self.name = newName;
   },
-  // The submit action calls the /deck/addOrUpdate API.
+  // The submit action calls the /api/deck/addOrUpdate API.
   submit: flow(function* submit() {
     try {
       // If no deckId exists, generate one (using crypto.randomUUID if available)
@@ -25,19 +25,15 @@ export const DeckStore = DeckStoreBase.actions((self) => ({
       }
       const payload = {
         deckId: self.deckId,
-        // Assuming the backend expects just the cards array.
+        deckName: self.name,
         deck: self.dropzone.map((c) => c.id),
-        // Optionally, send the name if your backend supports it.
-        name: self.name,
       };
-      const response = yield fetch(urlOf(`/deck/addOrUpdate`), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = yield requestWithAuth(
+        "PUT",
+        `/api/deck/addOrUpdate`,
+        JSON.stringify(payload),
+      );
+
       if (!response.ok) {
         throw new Error("Failed to submit deck");
       }
@@ -53,14 +49,11 @@ export const DeckStore = DeckStoreBase.actions((self) => ({
       const payload = {
         deckId: self.deckId,
       };
-      const response = yield fetch(urlOf(`/deck/setActive`), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = yield requestWithAuth(
+        "POST",
+        `/api/deck/setActive`,
+        JSON.stringify(payload),
+      );
       if (!response.ok) {
         throw new Error("Failed to set active deck");
       }

@@ -30,7 +30,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/editDecks",
+    path: "/deck/edit",
     element: <DeckBuilderPage />,
     errorElement: <ErrorPage />,
   },

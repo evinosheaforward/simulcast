@@ -11,9 +11,10 @@ import { useObservable } from "mst-use-observable";
 import { CardArrayModel, CardSnapshot } from "../models/GameStore";
 import deckStore, { IDeckStore } from "../models/DeckModel";
 import { getSnapshot } from "mobx-state-tree";
-import { urlOf } from "../Utilities";
 import { useSearchParams } from "react-router-dom";
 import { Deck, DeckMap } from "simulcast-common";
+import { CardDragOverlayComponent } from "../Card";
+import { requestWithAuth } from "../Firebase";
 
 type ActiveCard = CardSnapshot | null;
 
@@ -21,6 +22,7 @@ const DeckBuilderPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const deckId = searchParams.get("deckId");
   const deckData = useObservable(deckStore);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
   const [activeCard, setActiveCard] = useState<ActiveCard>(null);
@@ -30,10 +32,10 @@ const DeckBuilderPage: React.FC = () => {
       if (deckId) {
         try {
           // Make a GET request to your API endpoint using the deckId.
-          const response = await fetch(urlOf(`/deck/get?deckId=${deckId}`), {
-            method: "GET",
-            headers: { "ngrok-skip-browser-warning": "true" },
-          });
+          const response = await requestWithAuth(
+            "GET",
+            `/api/deck/get?deckId=${deckId}`,
+          );
           if (response.ok) {
             const data = await response.json();
             deckData.setDropzone(
@@ -51,10 +53,11 @@ const DeckBuilderPage: React.FC = () => {
               ),
             );
           } else {
-            console.error("Failed to fetch deck:", response.statusText);
+            deckData.setHand(CardArrayModel.create(structuredClone([...Deck])));
           }
         } catch (error) {
           console.error("Error fetching deck:", error);
+          deckData.setHand(CardArrayModel.create(structuredClone([...Deck])));
         }
       }
     }
@@ -64,10 +67,10 @@ const DeckBuilderPage: React.FC = () => {
   const getContainer = useCallback(
     (cardId: string): string | undefined => {
       if (deckData.dropzone.some((card) => card.id === cardId)) {
-        return "deck";
+        return "dropzone";
       }
       if (deckData.hand.some((card) => card.id === cardId)) {
-        return "cardOptions";
+        return "hand";
       }
       return undefined;
     },
@@ -164,11 +167,15 @@ const DeckBuilderPage: React.FC = () => {
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    if (deckData.dropzone.length < 20) {
+      setError("Deck must be at least 20 cards");
+      setSubmitting(false);
+      return;
+    }
     try {
       await deckData.submit();
-      alert("Deck submitted successfully!");
     } catch (_: any) {
-      alert("Error submitting deck");
+      setError("Error submitting deck");
     } finally {
       setSubmitting(false);
     }
@@ -199,21 +206,6 @@ const DeckBuilderPage: React.FC = () => {
           placeholder="Enter deck name"
         />
       </div>
-      {/* Placeholder for the card selection section */}
-      <div className="mb-4">
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragCancel={handleDragCancel}
-          autoScroll={false}
-        >
-          <p>Card selection goes here...</p>
-
-          <DeckBuilderCardContainerComponent id="dropzone" />
-          <DeckBuilderCardContainerComponent id="hand" />
-        </DndContext>
-      </div>
       <div className="flex space-x-4">
         <button
           onClick={handleSubmit}
@@ -229,6 +221,21 @@ const DeckBuilderPage: React.FC = () => {
         >
           {settingActive ? "Setting Active..." : "Set as Active Deck"}
         </button>
+        {error && <p className="text-red-500">{error}</p>}
+      </div>
+
+      <div className="mb-4">
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+          autoScroll={false}
+        >
+          <DeckBuilderCardContainerComponent id="dropzone" />
+          <DeckBuilderCardContainerComponent id="hand" />
+          {activeCard && <CardDragOverlayComponent card={activeCard} />}
+        </DndContext>
       </div>
     </div>
   );

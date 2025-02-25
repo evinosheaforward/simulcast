@@ -1,14 +1,14 @@
 import React, { ReactNode, useEffect, useState } from "react";
-import { logout } from "./Firebase";
+import { logout, useIsLoggedIn } from "./Firebase";
 
 interface PageFrameProps {
   children: ReactNode;
 }
-const isLoggedIn = false;
 
 const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const isLoggedIn = useIsLoggedIn();
 
   useEffect(() => {
     document.title = "SimulCast";
@@ -31,17 +31,23 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
               <a href="/">SimulCast</a>
             </h1>
             <div className="inline-block group absolute right-0 top-0 w-24 mr-3">
-              <div className="bg-gray-700 rounded cursor-pointer mt-3 text-white w-full text-center font-bold rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform">
-                Account
-              </div>
+              {isLoggedIn ? (
+                <div className="bg-red-600 rounded cursor-pointer mt-3 text-white w-full text-center font-bold rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform">
+                  Account
+                </div>
+              ) : (
+                <div className="bg-gray-700 rounded cursor-pointer mt-3 text-white w-full text-center font-bold rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform">
+                  Account
+                </div>
+              )}
               <div className="absolute bg-gray-700 text-white mt-1/2 text-center w-full rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <ul className="text-center">
                   {isLoggedIn ? (
                     <>
-                      <li className="hover:bg-gray-600 cursor-pointer">
-                        <a href="/build">Deck Builder</a>
+                      <li className="hover:bg-gray-500 cursor-pointer">
+                        <a href="/decks">Deck Builder</a>
                       </li>
-                      <li className="hover:bg-gray-600 cursor-pointer">
+                      <li className="hover:bg-gray-500 cursor-pointer">
                         <button onClick={handleLogout} disabled={loading}>
                           {loading ? "Logging Out..." : "Log Out"}
                         </button>

@@ -16,6 +16,7 @@ import {
   animals,
 } from "unique-names-generator";
 import { urlOf } from "../Utilities";
+import { requestWithAuth } from "../Firebase";
 
 const randomName = () => {
   return uniqueNamesGenerator({
@@ -45,8 +46,8 @@ export const AbilityQueueItemModel = types.model("AbilityQueueItem", {
 
 export const MoveableCardStoreBase = types
   .model("GameStore", {
-    hand: types.optional(types.array(CardModel), []),
-    dropzone: types.optional(types.array(CardModel), []),
+    hand: CardArrayModel,
+    dropzone: CardArrayModel,
     mana: types.optional(types.number, Number.MAX_SAFE_INTEGER),
   })
   .volatile((_) => ({
@@ -372,14 +373,11 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
     const gameId = randomName();
     const endpoint = isBotGame ? "/api/game/createBotGame" : "/api/game/create";
     try {
-      const response = yield fetch(urlOf(endpoint), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: JSON.stringify({ gameId }),
-      });
+      const response = yield requestWithAuth(
+        "POST",
+        endpoint,
+        JSON.stringify({ gameId }),
+      );
       const data = yield response.json();
       self.gameId = data.gameId;
       self.playerId = data.playerId;
@@ -399,10 +397,10 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
       const queryParams = new URLSearchParams({
         gameId: gameId.trim(),
       }).toString();
-      const response = yield fetch(urlOf(`/api/game/get?${queryParams}`), {
-        method: "GET",
-        headers: { "ngrok-skip-browser-warning": "true" },
-      });
+      const response = yield requestWithAuth(
+        "GET",
+        `/api/game/get?${queryParams}`,
+      );
       const data = yield response.json();
       self.gameId = data.gameId;
       self.playerId = data.playerId;

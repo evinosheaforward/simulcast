@@ -1,11 +1,14 @@
+import { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
   connectAuthEmulator,
   signInWithEmailAndPassword,
   signOut,
+  onAuthStateChanged,
   createUserWithEmailAndPassword,
 } from "firebase/auth";
+import { urlOf } from "./Utilities";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -35,6 +38,7 @@ export async function login(
   email: string,
   password: string,
   setError: (arg0: string) => void,
+  redirect: () => void,
 ): Promise<void> {
   try {
     const userCredential = await signInWithEmailAndPassword(
@@ -45,9 +49,10 @@ export async function login(
     console.log("Logged in:", userCredential.user);
     const token = await userCredential.user.getIdToken();
     console.log("ID Token:", token);
-  } catch (error: any) {
-    console.error("Login failed:", error);
-    setError(error.message);
+    redirect();
+  } catch (_) {
+    console.error("Login failed");
+    setError("Login Failed");
   }
 }
 
@@ -61,6 +66,7 @@ export async function register(
   email: string,
   password: string,
   setError: (arg0: string) => void,
+  redirect: () => void,
 ): Promise<void> {
   try {
     const userCredential = await createUserWithEmailAndPassword(
@@ -71,9 +77,21 @@ export async function register(
     console.log("User registered:", userCredential.user);
     const token = await userCredential.user.getIdToken();
     console.log("ID Token:", token);
+    redirect();
   } catch (error: any) {
-    console.error("Registration failed:", error);
-    setError(error.message as string);
+    console.error("Registration failed");
+    const errorCode = error.code;
+    switch (errorCode) {
+      case "auth/email-already-in-use":
+        setError("Email is already in use.");
+        break;
+      case "auth/weak-password":
+        setError("Password should be at least 6 characters");
+        break;
+      default:
+        setError("An error occurred");
+        break;
+    }
   }
 }
 
@@ -88,4 +106,53 @@ export async function logout(setError: (arg0: string) => void): Promise<void> {
     console.error("Logout failed:", error);
     setError(error.message);
   }
+}
+
+export function useIsLoggedIn(): boolean {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  return isLoggedIn;
+}
+
+export async function requestWithAuth(
+  method: string,
+  url: string,
+  body?: string,
+) {
+  let token = await auth?.currentUser?.getIdToken(true);
+
+  let request: any;
+  if (token) {
+    console.log("user logged in, using auth token to make request");
+    request = {
+      method: method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+    };
+  } else {
+    console.log("user not logged in");
+    request = {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+    };
+  }
+
+  if (body) {
+    request.body = body;
+  }
+
+  return await fetch(urlOf(url), request);
 }

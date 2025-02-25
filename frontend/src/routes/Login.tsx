@@ -1,19 +1,20 @@
 // Login.tsx
 import React, { useState } from "react";
 import { login } from "../Firebase";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    await login(email, password, setError);
+    await login(email, password, setError, () => navigate("/"));
     setLoading(false);
   };
 
