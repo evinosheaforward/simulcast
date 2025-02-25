@@ -3,6 +3,7 @@ import { Router, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
 import { Card, populate, randomName } from "simulcast-common";
 import Game, { GameState } from "../models/RulesEngine";
+import { optionalAuth } from "..//Authentication";
 
 const games: Map<string, Game> = new Map();
 
@@ -12,32 +13,38 @@ const router = Router();
  *  Creates a new game using an optional gameId and a host playerName.
  *  Returns a game token (the gameId) and the host player's id.
  */
-router.post("/create", (req: Request, res: Response) => {
+router.post("/create", optionalAuth, async (req: Request, res: Response) => {
   const { gameId } = req.body;
   console.log("game ID: ", gameId);
   const finalGameId = gameId || randomName();
   console.log("final game ID: ", finalGameId);
   const newGame = new Game(finalGameId);
+  await newGame.addPlayer(req.user?.uid);
   games.set(finalGameId, newGame);
   res.json({ gameId: finalGameId, playerId: newGame.players[0].id });
 });
 
 /** POST /api/game/createBotGame */
-router.post("/createBotGame", (req: Request, res: Response) => {
-  const { gameId } = req.body;
-  console.log("game ID: ", gameId);
-  const finalGameId = gameId || randomName();
-  console.log("final game ID: ", finalGameId);
-  const newGame = new Game(finalGameId);
-  newGame.addBot();
-  games.set(finalGameId, newGame);
-  res.json({ gameId: finalGameId, playerId: newGame.players[0].id });
-});
+router.post(
+  "/createBotGame",
+  optionalAuth,
+  async (req: Request, res: Response) => {
+    const { gameId } = req.body;
+    console.log("game ID: ", gameId);
+    const finalGameId = gameId || randomName();
+    console.log("final game ID: ", finalGameId);
+    const newGame = new Game(finalGameId);
+    await newGame.addPlayer(req.user?.uid);
+    newGame.addBot();
+    games.set(finalGameId, newGame);
+    res.json({ gameId: finalGameId, playerId: newGame.players[0].id });
+  },
+);
 
 /** GET /api/game/get
  *  Retrieves a game state by its gameId.
  */
-router.get("/get", (req: Request, res: Response) => {
+router.get("/get", optionalAuth, async (req: Request, res: Response) => {
   const { gameId } = req.query;
   if (typeof gameId !== "string") {
     res.status(400).json({ error: "Invalid gameId" });
@@ -48,7 +55,7 @@ router.get("/get", (req: Request, res: Response) => {
     res.status(404).json({ error: "Game not found" });
     return;
   }
-  const joinPlayer = game.addPlayer();
+  const joinPlayer = await game.addPlayer(req.user?.uid);
   res.json({ gameId: gameId, playerId: joinPlayer.id });
 });
 

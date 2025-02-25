@@ -1,6 +1,6 @@
 // Example UI Component: GameOptions.tsx
 import React, { useState } from "react";
-import gameStore from "./GameStore";
+import gameStore from "./models/GameStore";
 
 const GameOptions: React.FC = () => {
   const [joinGameId, setJoinGameId] = useState("");

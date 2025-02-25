@@ -10,12 +10,12 @@ import { useObservable } from "mst-use-observable";
 import CardContainerComponent, {
   AbilityQueue,
   OpponentDropZone,
-} from "./CardContainer";
-import gameStore, { CardSnapshot } from "./GameStore";
-import GameOptions from "./GameStart";
-import { CardDragOverlayComponent } from "./Card";
+} from "../CardContainer";
+import gameStore, { CardSnapshot } from "../models/GameStore";
+import GameOptions from "../GameStart";
+import { CardDragOverlayComponent } from "../Card";
 import { getSnapshot } from "mobx-state-tree";
-import { Notification, UpdateLog } from "./Utilities";
+import { Notification, UpdateLog } from "../Utilities";
 
 export const ROUND_DURATION = 30; // seconds
 

@@ -1,20 +1,11 @@
 import React from "react";
 import { PlayerCardFrameComponent } from "../Card";
-import {
-  DeckMap,
-  CARDS_PER_TURN,
-  MANA_PER_TURN,
-  TargetTypes,
-} from "simulcast-common";
-import { CardSnapshot } from "../GameStore";
-import { ROUND_DURATION } from "../PlayerBoard";
+import { CARDS_PER_TURN, MANA_PER_TURN, TargetTypes } from "simulcast-common";
+import { CardSnapshot } from "../models/GameStore";
+import { ROUND_DURATION } from "./PlayerBoard";
+import { sortedDeck } from "../Utilities";
 
 export default function Root() {
-  // Sort cards alphabetically by ID
-  const sortedDeck = [...DeckMap.values()].sort((a, b) =>
-    a.id.localeCompare(b.id),
-  );
-
   return (
     <>
       <div className="items-center justify-center p-2 grid gap-1">

@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "client": "vite",
+    "dev": "concurrently \"vite\"",
+    "lint:fix": "eslint src --fix",
     "build": "npm rebuild simulcast-common && tsc -b && vite build",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
     "preview": "vite preview",
     "all": "eslint src --fix && tsc -b && vite build && vite"
   },
@@ -16,6 +17,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tailwindcss/vite": "^4.0.3",
+    "concurrently": "^9.1.2",
+    "firebase": "^11.3.1",
     "framer-motion": "^12.4.0",
     "mobx-state-tree": "^7.0.1",
     "mst-use-observable": "github:coolsoftwaretyler/mst-use-observable",

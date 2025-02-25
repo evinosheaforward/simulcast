@@ -11,10 +11,15 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "firebase-admin": "^13.1.0",
+    "knex": "^3.1.0",
     "mobx-state-tree": "^7.0.1",
+    "pg": "^8.13.3",
     "simulcast-common": "file:../common",
     "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7",
     "unique-names-generator": "^4.7.1",
     "uuid": "^11.0.5"
   },
@@ -22,6 +27,7 @@
     "@eslint/js": "^9.19.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.1",
+    "@types/pg": "^8.11.11",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",

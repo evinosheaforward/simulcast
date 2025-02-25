@@ -11,13 +11,9 @@ export const Card = types.model("Card", {
 export const GameStoreModel = types.model("GameStore", {
   gameId: types.string,
   playerId: types.string,
-  // Your own cards
   hand: types.array(Card),
-  // Cards played by you
   dropzone: types.array(Card),
-  // The opponent’s revealed moves
   opponentDropzone: types.array(Card),
-  // Game status (e.g. 'playing' or 'finished')
   gameStatus: types.optional(types.string, "playing"),
 });
 

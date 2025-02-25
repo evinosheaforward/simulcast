@@ -3,6 +3,7 @@ import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
 import gameRoutes, { handleSocketConnection } from "./routes/Game";
+import deckRoutes from "./routes/DeckRoutes";
 
 const app = express();
 
@@ -12,8 +13,10 @@ app.use(express.json());
 
 // Mount the game API endpoints under /api/game
 app.use("/api/game", gameRoutes);
+app.use("/api/deck", deckRoutes);
 
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: { origin: "*" }, // Socket.IO CORS configuration
 });

@@ -1,7 +1,7 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useObservable } from "mst-use-observable";
-import gameStore, { Card } from "./GameStore";
+import gameStore, { Card } from "./models/GameStore";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,6 +11,7 @@ import CardComponent, {
   PlayerCardFrameComponent,
 } from "./Card";
 import { DeckMap } from "simulcast-common";
+import deckStore from "./models/DeckModel";
 
 interface CardContainerProps {
   id: string;
@@ -51,6 +52,51 @@ const CardContainerComponent: React.FC<CardContainerProps> = ({ id }) => {
                 key={"emptyCard" + gameData.tick}
                 container={id}
                 text={id === "dropzone" ? "Your Board" : "Your hand"}
+              />
+            )}
+          </SortableContext>
+        </motion.div>
+      </section>
+    </div>
+  );
+};
+
+export const DeckBuilderCardContainerComponent: React.FC<
+  CardContainerProps
+> = ({ id }) => {
+  const deckData = useObservable(deckStore);
+  const { setNodeRef } = useDroppable({ id });
+
+  return (
+    <div className="mb-1 mt-1">
+      <section>
+        <motion.div
+          key={id}
+          ref={setNodeRef}
+          id={id}
+          layout
+          className="h-min-[140px] w-full flex flex-shrink-0 flex-wrap gap-y-1 justify-center touch-pan-x items-center p-2 border border-gray-700 rounded bg-gray-800 shadow-sm"
+        >
+          <SortableContext
+            items={deckData.getZone(id).map((card) => card.id) && [id]}
+            strategy={rectSortingStrategy}
+            id={id}
+          >
+            {deckData.getZone(id).length ? (
+              <AnimatePresence>
+                {deckData.getZone(id).map((card) => (
+                  <CardComponent key={card + id} card={card} containerId={id} />
+                ))}
+              </AnimatePresence>
+            ) : (
+              <EmptyCard
+                key={"emptyCard" + id}
+                container={id}
+                text={
+                  id === "dropzone"
+                    ? "No Cards In Your Deck."
+                    : "No Cards Left To Put Into Deck."
+                }
               />
             )}
           </SortableContext>

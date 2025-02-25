@@ -1,3 +1,5 @@
+export const DECK_LENGTH = 20;
+export const MAX_DECK_CYCLES = 3;
 export const CARDS_PER_TURN = 3;
 export const MANA_PER_TURN = 3;
 
@@ -80,7 +82,7 @@ export type Card = {
   cost: number;
   time: number;
   ability: Ability;
-  timer?: number;
+  timer?: number | null;
 };
 
 export interface ActiveAbility {
@@ -798,6 +800,19 @@ export const Deck: Card[] = [
 ];
 
 export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));
-export function NewDeck(cardsInHand: string[] = []) {
-  return [...Deck.map((c) => c.id).filter((cId) => !cardsInHand.includes(cId))];
+
+export function randomDeck() {
+  const ids = Deck.map(c => c.id);
+
+  // Shuffle the array using Fisher-Yates algorithm
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+
+  return ids.slice(0, 20);
+}
+
+export function newDeck(cardsInHand: string[] = [], deck: string[]) {
+  return [...deck.filter((cId) => !cardsInHand.includes(cId))];
 }
