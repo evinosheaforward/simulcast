@@ -845,13 +845,6 @@ function shuffle(array: any[]) {
   return shuffled;
 }
 
-export function randomDeck() {
-  const ids = Deck.map(c => c.id);
-  shuffle(ids)
-  return ids.slice(0, 20);
-}
-
-
 export function newDeck(cardsInHand: string[] = [], deck: string[]) {
   return shuffle([...deck.filter((cId) => !cardsInHand.includes(cId))]);
 }
@@ -866,4 +859,17 @@ export const BOT_DECK = [
   'Crypt',   'Blood',   'Hex',
   'Alchemy', 'Frost',   'Sword',
   'Goblet'
+
 ];
+
+export const AGGRO_DECK = [
+ 'Tree',    'Flame',   'Harp',
+ 'Quill',   'Book',    'Steed',
+ 'Well',    'Spark',   'Crown',
+ 'Ring',    'Diamond', 'Cloud',
+ 'Scepter', 'Wand',    'Counter',
+ 'Torch',   'Bow',     'Bloom',
+ 'Crypt',   'Blood',   'Hex',
+ 'Alchemy', 'Frost',   'Sword',
+ 'Goblet'
+]

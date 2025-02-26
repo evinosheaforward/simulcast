@@ -15,7 +15,7 @@ import {
   CARDS_PER_TURN,
   MANA_PER_TURN,
   randomName,
-  randomDeck,
+  AGGRO_DECK,
   MAX_DECK_CYCLES,
   BOT_DECK,
 } from "simulcast-common";
@@ -52,11 +52,11 @@ class Game {
   async addPlayer(uid: string | undefined) {
     let playerDeck: string[];
     if (!uid) {
-      playerDeck = randomDeck();
+      playerDeck = [...AGGRO_DECK];
     } else {
       const tmpDeck = await getUserDeck(uid);
       if (!tmpDeck) {
-        playerDeck = randomDeck();
+        playerDeck = [...AGGRO_DECK];
       } else {
         playerDeck = tmpDeck;
       }
@@ -214,6 +214,7 @@ class Game {
       if (array.length === 0) {
         if (this.decks.get(playerId)!.cycle === MAX_DECK_CYCLES) {
           throw new PlayerDiedError(
+            playerId,
             `Finished ${MAX_DECK_CYCLES} Deck Cycles, they lose. Game Over`,
           );
         }
