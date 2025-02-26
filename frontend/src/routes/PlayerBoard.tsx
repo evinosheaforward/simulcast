@@ -188,9 +188,9 @@ const PlayerBoard: React.FC = () => {
       autoScroll={false}
     >
       {/* Header */}
-      <GameOptions />
+      <GameOptions key="gameOptions" />
 
-      <UpdateLog />
+      <UpdateLog key={gameData.updateLog.join("")} />
       <div className="text-center text-white grid grid-rows-1 m-1">
         {gameData.gameId ? (
           <>

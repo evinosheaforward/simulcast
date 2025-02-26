@@ -34,3 +34,5 @@ frontend/images/Well.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Blood.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Harp.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Moon.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Lightning.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Slow.png filter=lfs diff=lfs merge=lfs -text

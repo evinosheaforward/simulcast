@@ -17,6 +17,7 @@ import {
   randomName,
   randomDeck,
   MAX_DECK_CYCLES,
+  BOT_DECK,
 } from "simulcast-common";
 import { getUserDeck } from "./DeckStore";
 
@@ -97,10 +98,9 @@ class Game {
     };
     this.players.push(botPlayer);
     this.botPlayerId = botPlayer.id;
-    const botDeck = randomDeck();
     this.decks.set(botPlayer.id, {
-      full: botDeck,
-      current: [...botDeck],
+      full: BOT_DECK,
+      current: [...BOT_DECK],
       cycle: 1,
     });
     this.rulesEngine.goesFirst =
@@ -144,14 +144,14 @@ class Game {
     } catch (error) {
       if (error instanceof PlayerDiedError) {
         console.log(`Player died: ${error.playerId}`);
-        io.to(this.id).emit("gameOver", {
-          winner: this.players.filter((p) => p.id != error.playerId)[0].id,
-        });
         await new FrontEndUpdate(
           null,
           null,
           `${error.playerId}: ${error.message}`,
         ).send(io, this.id);
+        io.to(this.id).emit("gameOver", {
+          winner: this.players.filter((p) => p.id != error.playerId)[0].id,
+        });
         for (const playerId of this.players.map((p) => p.id)) {
           io.to(playerId).disconnectSockets();
         }
@@ -202,15 +202,13 @@ class Game {
     console.log("RESOLVE ROUND OVER");
   }
 
-  /** Utility: Draw a hand (abstract implementation) */
   drawHand(delta: number = 0, playerId: string, currentHand: Card[]): Card[] {
-    // HOW DOES CARD DRAW WORK?
     const drawCount = Math.max(
       delta + Math.max(CARDS_PER_TURN - currentHand.length, 1),
       0,
     );
     let array = this.decks.get(playerId)!.current;
-    const result = [...currentHand.map((c) => c.id)];
+    const newHand = [...currentHand.map((c) => c.id)];
 
     for (let i = 0; i < drawCount; i++) {
       if (array.length === 0) {
@@ -220,21 +218,21 @@ class Game {
           );
         }
         this.decks.get(playerId)!.current = newDeck(
-          currentHand.map((c) => c.id),
+          newHand,
           this.decks.get(playerId)!.full,
         );
         array = this.decks.get(playerId)!.current;
         // whole deck in hand
         if (array.length === 0) {
           break;
-        } else {
-          this.decks.get(playerId)!.current;
         }
+        this.decks.get(playerId)!.cycle++;
       }
+
       const randomIndex = Math.floor(Math.random() * array.length);
-      result.push(array.splice(randomIndex, 1)[0]); // Remove the selected element
+      newHand.push(array.splice(randomIndex, 1)[0]); // Remove the selected element
     }
-    return structuredClone(result.map((cardId) => DeckMap.get(cardId)!));
+    return structuredClone(newHand.map((cardId) => DeckMap.get(cardId)!));
   }
 
   playBotTurn() {
@@ -316,6 +314,17 @@ class Game {
         });
       if (playableCount > 2) {
         // scepter-wand is a must
+        if (comboCards[0].id === "Wand") {
+          const scepterIndex = comboCards.findIndex(
+            (card) => card.id === "Scepter",
+          );
+          if (scepterIndex > -1) {
+            // Remove the "Scepter" card from its current position
+            const [scepterCard] = comboCards.splice(scepterIndex, 1);
+            // Insert it at the front of the list
+            comboCards.unshift(scepterCard);
+          }
+        }
         if (comboCards[0].id === "Wand") {
           const scepterIndex = comboCards.findIndex(
             (card) => card.id === "Scepter",
@@ -492,14 +501,14 @@ class RulesEngine {
     } catch (error) {
       if (error instanceof PlayerDiedError) {
         console.log(`Player died: ${error.playerId}`);
-        io.to(this.gameId).emit("gameOver", {
-          winner: this.players.filter((p) => p.id != error.playerId)[0].id,
-        });
         await new FrontEndUpdate(
           null,
           null,
           `${error.playerId}: ${error.message}`,
         ).send(io, this.gameId);
+        io.to(this.gameId).emit("gameOver", {
+          winner: this.players.filter((p) => p.id != error.playerId)[0].id,
+        });
         for (const playerId of this.players.map((p) => p.id)) {
           io.to(playerId).disconnectSockets();
         }
@@ -609,24 +618,21 @@ class RulesEngine {
             // damage IS negative to health
             targetPlayer.health -= effectValue!;
             updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
-            updateEvent.updateLog = `${activeCard.id} dealt ${activeCard.ability.effect.value!} damage to ${targetPlayer.id}`;
+            updateEvent.updateLog = `${activeCard.id} dealt ${effectValue!} damage to ${targetPlayer.id}`;
             break;
           case TargetTypes.HEALTH:
             targetPlayer.health += effectValue!;
             updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
-            updateEvent.updateLog = `${activeCard.id} healed ${activeCard.ability.effect.value!} to ${targetPlayer.id}`;
+            updateEvent.updateLog = `${activeCard.id} healed ${effectValue!} to ${targetPlayer.id}`;
             break;
           case TargetTypes.DRAW:
-            targetPlayer.cardDraw = Math.max(
-              (targetPlayer.cardDraw += effectValue!),
-              0,
-            );
-            updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} draw to ${targetPlayer.id}`;
+            targetPlayer.cardDraw += effectValue!;
+            updateEvent.updateLog = `${activeCard.id} gave ${effectValue!} draw to ${targetPlayer.id}`;
             break;
           case TargetTypes.MANA:
             targetPlayer.mana += effectValue!;
             updateEvent.setMana(targetPlayer.id, targetPlayer.mana);
-            updateEvent.updateLog = `${activeCard.id} gave ${activeCard.ability.effect.value!} mana to ${targetPlayer.id}`;
+            updateEvent.updateLog = `${activeCard.id} gave ${effectValue!} mana to ${targetPlayer.id}`;
             break;
           case TargetTypes.SPELL:
             switch (activeCard.ability.effect.subtype) {
@@ -724,10 +730,10 @@ class RulesEngine {
 
   async triggersAbility(activeCard: Card, io: Server) {
     let resolves = true;
-    for (const {
+    for await (const {
       player: player,
       card: triggeredCard,
-    } of await this.abilityQueue.triggeredAbilites(
+    } of this.abilityQueue.triggeredAbilites(
       activeCard,
       this.activePlayer!,
       io,
@@ -806,37 +812,33 @@ class AbilityQueue {
     return this.abilities.filter((ability) => ability.player === player);
   }
 
-  async triggeredAbilites(
+  async *triggeredAbilites(
     card: Card,
     activePlayer: string,
     io: Server,
     gameId: string,
   ) {
     let i = 0;
-    const triggers = [];
     while (i < this.abilities.length) {
       if (triggerMatches(card, activePlayer, this.abilities[i])) {
+        let retTrigger: ActiveAbility;
+        if (this.abilities[i].card.ability.trigger?.expiresOnTrigger) {
+          retTrigger = this.abilities.splice(i, 1)[0];
+        } else {
+          retTrigger = this.abilities[i];
+          i++;
+        }
         await new FrontEndUpdate(
           activePlayer,
           null,
-          `${this.abilities[i].card.id} triggered`,
+          `${retTrigger.card.id} triggered`,
+          this,
         ).send(io, gameId, 200);
-        if (this.abilities[i].card.ability.trigger?.expiresOnTrigger) {
-          triggers.push(this.abilities.splice(i, 1)[0]);
-        } else {
-          triggers.push(this.abilities[i]);
-          i++;
-        }
+        yield retTrigger;
       } else {
         i++;
       }
     }
-    await new FrontEndUpdate(activePlayer, null, null, this).send(
-      io,
-      gameId,
-      200,
-    );
-    return triggers;
   }
 
   async expireAbilities(

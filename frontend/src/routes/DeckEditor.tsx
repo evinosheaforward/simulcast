@@ -12,7 +12,7 @@ import { CardArrayModel, CardSnapshot } from "../models/GameStore";
 import deckStore, { IDeckStore } from "../models/DeckModel";
 import { getSnapshot } from "mobx-state-tree";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { Deck, DeckMap } from "simulcast-common";
+import { Deck, DECK_LENGTH, DeckMap } from "simulcast-common";
 import { CardDragOverlayComponent } from "../Card";
 import { auth, requestWithAuth } from "../Firebase";
 
@@ -185,8 +185,8 @@ const DeckBuilderPageInterface: React.FC = () => {
       setSubmitting(false);
       return;
     }
-    if (deckData.dropzone.length < 20) {
-      setError("Deck must be at least 20 cards");
+    if (deckData.dropzone.length != DECK_LENGTH) {
+      setError(`Deck must have ${DECK_LENGTH} cards`);
       setSubmitting(false);
       return;
     }

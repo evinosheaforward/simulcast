@@ -1,4 +1,4 @@
-export const DECK_LENGTH = 20;
+export const DECK_LENGTH = 25;
 export const MAX_DECK_CYCLES = 3;
 export const CARDS_PER_TURN = 3;
 export const MANA_PER_TURN = 3;
@@ -150,18 +150,21 @@ export const Deck: Card[] = [
   {
     id: "Shield",
     content:
-      "Reduce the value by 1 for damage spells your opponent casts this turn.",
-    cost: 2,
+      "Reduce the value to 1 for all damage spells your opponent casts this turn.",
+    cost: 3,
     time: 1,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        type: TargetTypes.DAMAGE,
-        prevention: true,
-        value: 1,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_TYPE,
+        spellChange: {
+          value: 1
+        },
       },
       trigger: {
         type: TargetTypes.DAMAGE,
+        targetPlayer: PlayerTargets.OPPONENT
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
@@ -277,6 +280,20 @@ export const Deck: Card[] = [
       },
     },
   },
+{
+    id: "Lightning",
+    content: "Deal 5 damage.",
+    cost: 5,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.DAMAGE,
+        value: 5,
+        immediate: true,
+      },
+    },
+  },
   {
     id: "Steed",
     content: "Reduce the time by 3 for your next spell this turn.",
@@ -294,8 +311,23 @@ export const Deck: Card[] = [
     },
   },
   {
+    id: "Slow",
+    content: "Increase the time of your opponent's left-most spell by 4.",
+    cost: 2,
+    time: 1,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_TIME,
+        value: 4,
+        immediate: true,
+      },
+    },
+  },
+  {
     id: "Scroll",
-    content: "Your opponent loses 2 mana.",
+    content: "Your opponent loses 3 mana.",
     cost: 2,
     time: 1,
     ability: {
@@ -365,14 +397,14 @@ export const Deck: Card[] = [
   },
   {
     id: "Axe",
-    content: "Your opponent draws 2 fewer cards next turn.",
-    cost: 3,
+    content: "Your opponent draws 3 fewer cards next turn.",
+    cost: 2,
     time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.DRAW,
-        value: 2,
+        value: 3,
         prevention: true,
         immediate: true,
       },
@@ -626,7 +658,7 @@ export const Deck: Card[] = [
     id: "Crypt",
     content:
       "Deal 2 damage to your opponent at the end of the next three rounds.",
-    cost: 4,
+    cost: 5,
     time: 4,
     ability: {
       effect: {
@@ -801,18 +833,37 @@ export const Deck: Card[] = [
 
 export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));
 
+function shuffle(array: any[]) {
+  // Create a copy of the array to avoid mutating the original
+  const shuffled = array.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i (inclusive)
+    const j = Math.floor(Math.random() * (i + 1));
+    // Swap elements at indices i and j
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export function randomDeck() {
   const ids = Deck.map(c => c.id);
-
-  // Shuffle the array using Fisher-Yates algorithm
-  for (let i = ids.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-  }
-
+  shuffle(ids)
   return ids.slice(0, 20);
 }
 
+
 export function newDeck(cardsInHand: string[] = [], deck: string[]) {
-  return [...deck.filter((cId) => !cardsInHand.includes(cId))];
+  return shuffle([...deck.filter((cId) => !cardsInHand.includes(cId))]);
 }
+
+export const BOT_DECK = [
+  'Tree',    'Flame',   'Harp',
+  'Quill',   'Book',    'Steed',
+  'Well',    'Spark',   'Crown',
+  'Ring',    'Diamond', 'Cloud',
+  'Scepter', 'Wand',    'Counter',
+  'Torch',   'Bow',     'Bloom',
+  'Crypt',   'Blood',   'Hex',
+  'Alchemy', 'Frost',   'Sword',
+  'Goblet'
+];
