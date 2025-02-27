@@ -29,6 +29,8 @@ const randomName = () => {
 export const CardModel = types.model("Card", {
   id: types.string,
   content: types.string,
+  changedContent: types.maybe(types.string),
+  changedBy: types.maybe(types.array(types.string)),
   cost: types.number,
   time: types.number,
   timer: types.optional(types.maybeNull(types.number), null),
@@ -40,7 +42,7 @@ export type Card = Instance<typeof CardModel>;
 export type CardSnapshot = SnapshotOut<typeof CardModel>;
 
 export const AbilityQueueItemModel = types.model("AbilityQueueItem", {
-  cardId: types.string,
+  card: CardModel,
   playerId: types.string,
 });
 
@@ -238,7 +240,7 @@ const GameStoreReorderable = types.compose(
       setUpdateLog(log: string) {
         self.updateLog.push(log);
       },
-      setAbilityQueue(abilityQueue: { cardId: string; playerId: string }[]) {
+      setAbilityQueue(abilityQueue: { card: Card; playerId: string }[]) {
         self.abilityQueue.replace(abilityQueue);
       },
     })),

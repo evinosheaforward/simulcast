@@ -1,94 +1,16 @@
+import {
+  AbilityExpirations,
+  Card,
+  Evaluation,
+  PlayerTargets,
+  TargetSubTypes,
+  TargetTypes,
+} from "./Cards";
+import { generateContent } from "./Descriptions";
 export const DECK_LENGTH = 25;
 export const MAX_DECK_CYCLES = 3;
 export const CARDS_PER_TURN = 3;
 export const MANA_PER_TURN = 3;
-
-export enum TargetTypes {
-  HEALTH = "HEALTH",
-  DAMAGE = "DAMAGE",
-  DRAW = "DRAW",
-  MANA = "MANA",
-  SPELL = "SPELL",
-  // Trigger at expiration event
-  EXPIRATION = "EXPIRATION",
-}
-
-export enum TargetSubTypes {
-  SPELL_TIME = "SPELL_SPEED",
-  SPELL_MANA = "SPELL_MANA",
-  SPELL_COUNTER = "SPELL_COUNTER",
-  SPELL_TYPE = "SPELL_TYPE",
-}
-
-export enum AbilityExpirations {
-  END_OF_ROUND = "END_OF_ROUND",
-  NEXT_CARD = "NEXT_CARD",
-}
-
-export enum PlayerTargets {
-  SELF = "SELF",
-  OPPONENT = "OPPONENT",
-}
-
-export enum Evaluation {
-  LESS = "LESS",
-  EQUAL = "EQUAL",
-  GREATER = "GREATER",
-}
-
-export interface Condition {
-  // expiration is for things like "next turn"
-  type: TargetTypes | "expiration";
-  subtype?: TargetSubTypes;
-  eval: Evaluation;
-  value?: number;
-}
-
-export interface Ability {
-  effect: {
-    targetPlayer: PlayerTargets;
-    type: TargetTypes;
-    subtype?: TargetSubTypes;
-    // used to make value negative
-    prevention?: boolean;
-    value?: number;
-    spellChange?: {
-      targetPlayer?: PlayerTargets;
-      type?: TargetTypes;
-      value?: number;
-    };
-    immediate?: boolean;
-  };
-  // when triggered, what condition to resolve
-  trigger?: {
-    type?: TargetTypes;
-    // trigger target player is about who _owns_ the spell, not who the spell targets
-    targetPlayer?: PlayerTargets;
-    subtype?: TargetSubTypes | AbilityExpirations;
-    expiresOnTrigger?: boolean;
-  };
-  expiration?: {
-    type: AbilityExpirations;
-    // Trigger when the numActivations = -1
-    triggerOnExpiration?: boolean;
-    numActivations: number;
-  };
-  condition?: Condition;
-}
-
-export type Card = {
-  id: string;
-  content: string;
-  cost: number;
-  time: number;
-  ability: Ability;
-  timer?: number | null;
-};
-
-export interface ActiveAbility {
-  player: string;
-  card: Card;
-}
 
 export function populate(cards: Card[]) {
   return structuredClone(
@@ -159,12 +81,12 @@ export const Deck: Card[] = [
         type: TargetTypes.SPELL,
         subtype: TargetSubTypes.SPELL_TYPE,
         spellChange: {
-          value: 1
+          value: 1,
         },
       },
       trigger: {
         type: TargetTypes.DAMAGE,
-        targetPlayer: PlayerTargets.OPPONENT
+        targetPlayer: PlayerTargets.OPPONENT,
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
@@ -261,7 +183,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.DAMAGE,
-        value: 1,
+        value: 2,
         immediate: true,
       },
     },
@@ -280,7 +202,7 @@ export const Deck: Card[] = [
       },
     },
   },
-{
+  {
     id: "Lightning",
     content: "Deal 5 damage.",
     cost: 5,
@@ -334,7 +256,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.MANA,
-        value: 2,
+        value: 3,
         prevention: true,
         immediate: true,
       },
@@ -444,6 +366,7 @@ export const Deck: Card[] = [
         value: 2,
       },
       trigger: {
+        targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.EXPIRATION,
         subtype: AbilityExpirations.NEXT_CARD,
       },
@@ -780,58 +703,7 @@ export const Deck: Card[] = [
       },
     },
   },
-
-  /* ------- NEW CARD NEED ART ---------- //
-  {
-    id: "Vortex",
-    content: "You lose 2 mana.",
-    cost: 0,
-    time: 1,
-    ability: {
-      effect: {
-        targetPlayer: PlayerTargets.SELF,
-        type: TargetTypes.MANA,
-        value: 2,
-        prevention: true,
-        immediate: true,
-      }
-    }
-  },
-  /* Card ideas:
-    - devestation: remove all cards from the board? 4/6
-    - lake
-    - death
-    - virus
-    - bird
-    - meat
-  {
-    "id": "Mirror",
-    "content": "Copy the effect of the opponent's current left-most spell to your board in the left-most slot.",
-    "cost": 3,
-    "time": 2,
-    "ability": {
-      "effect": {
-        "targetPlayer": "SELF",
-        "type": "SPELL",
-        "subtype": "SPELL_COPY", // We can repurpose SPELL_COUNTER or define a new subtype
-        "spellPosition": "0", // We can repurpose SPELL_COUNTER or define a new subtype
-        "immediate": true
-      },
-      "trigger": {
-        "type": "SPELL",          // Trigger on the last played spell
-        "targetPlayer": "OPPONENT",
-        "expiresOnTrigger": true
-      },
-      "expiration": {
-        "type": "END_OF_ROUND",
-        "numActivations": 1
-      }
-    }
-  },
-  */
 ];
-
-export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));
 
 function shuffle(array: any[]) {
   // Create a copy of the array to avoid mutating the original
@@ -850,26 +722,65 @@ export function newDeck(cardsInHand: string[] = [], deck: string[]) {
 }
 
 export const BOT_DECK = [
-  'Tree',    'Flame',   'Harp',
-  'Quill',   'Book',    'Steed',
-  'Well',    'Spark',   'Crown',
-  'Ring',    'Diamond', 'Cloud',
-  'Scepter', 'Wand',    'Counter',
-  'Torch',   'Bow',     'Bloom',
-  'Crypt',   'Blood',   'Hex',
-  'Alchemy', 'Frost',   'Sword',
-  'Goblet'
-
+  "Tree",
+  "Flame",
+  "Harp",
+  "Quill",
+  "Book",
+  "Steed",
+  "Well",
+  "Spark",
+  "Crown",
+  "Ring",
+  "Diamond",
+  "Cloud",
+  "Scepter",
+  "Wand",
+  "Counter",
+  "Torch",
+  "Bow",
+  "Bloom",
+  "Crypt",
+  "Blood",
+  "Hex",
+  "Alchemy",
+  "Frost",
+  "Sword",
+  "Goblet",
 ];
 
 export const AGGRO_DECK = [
- 'Tree',    'Flame',   'Harp',
- 'Quill',   'Book',    'Steed',
- 'Well',    'Spark',   'Crown',
- 'Ring',    'Diamond', 'Cloud',
- 'Scepter', 'Wand',    'Counter',
- 'Torch',   'Bow',     'Bloom',
- 'Crypt',   'Blood',   'Hex',
- 'Alchemy', 'Frost',   'Sword',
- 'Goblet'
-]
+  "Tree",
+  "Flame",
+  "Harp",
+  "Quill",
+  "Book",
+  "Steed",
+  "Well",
+  "Spark",
+  "Crown",
+  "Ring",
+  "Diamond",
+  "Cloud",
+  "Scepter",
+  "Wand",
+  "Counter",
+  "Torch",
+  "Bow",
+  "Bloom",
+  "Crypt",
+  "Blood",
+  "Hex",
+  "Alchemy",
+  "Frost",
+  "Sword",
+  "Goblet",
+];
+
+Deck.forEach((c) => {
+  c.content = generateContent(c.ability);
+  c.changedBy = [];
+  c.changedContent = "";
+});
+
+export const DeckMap = new Map<string, Card>(Deck.map((c) => [c.id, c]));

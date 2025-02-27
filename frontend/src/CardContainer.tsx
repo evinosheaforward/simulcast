@@ -10,7 +10,6 @@ import CardComponent, {
   OpponentCardFrameComponent,
   PlayerCardFrameComponent,
 } from "./Card";
-import { DeckMap } from "simulcast-common";
 import deckStore from "./models/DeckModel";
 
 interface CardContainerProps {
@@ -142,13 +141,13 @@ export const AbilityQueue: React.FC = () => {
             gameData.abilityQueue.map((abilityQueueItem, index) =>
               gameData.playerId == abilityQueueItem.playerId ? (
                 <PlayerCardFrameComponent
-                  key={`abilityqueue-${abilityQueueItem.cardId}-${abilityQueueItem.playerId}-${index}`}
-                  card={DeckMap.get(abilityQueueItem.cardId) as Card}
+                  key={`abilityqueue-${abilityQueueItem.card.id}-${abilityQueueItem.playerId}-${index}`}
+                  card={abilityQueueItem.card as Card}
                 />
               ) : (
                 <OpponentCardFrameComponent
-                  key={`abilityqueue-${abilityQueueItem.cardId}-${abilityQueueItem.playerId}-${index}`}
-                  card={DeckMap.get(abilityQueueItem.cardId) as Card}
+                  key={`abilityqueue-${abilityQueueItem.card.id}-${abilityQueueItem.playerId}-${index}`}
+                  card={abilityQueueItem.card as Card}
                 />
               ),
             )

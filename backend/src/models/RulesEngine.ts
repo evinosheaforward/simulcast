@@ -18,6 +18,7 @@ import {
   AGGRO_DECK,
   MAX_DECK_CYCLES,
   BOT_DECK,
+  generateContent,
 } from "simulcast-common";
 import { getUserDeck } from "./DeckStore";
 
@@ -612,6 +613,13 @@ class RulesEngine {
             updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
             break;
         }
+        console.log("CHANGED CARD");
+        targetCard.changedContent = generateContent(targetCard.ability);
+        if (targetCard.changedBy) {
+          targetCard.changedBy.push(activeCard.id);
+        } else {
+          targetCard.changedBy = [activeCard.id];
+        }
       } else {
         // effect activates now, not on a card
         switch (activeCard.ability.effect.type) {
@@ -636,6 +644,7 @@ class RulesEngine {
             updateEvent.updateLog = `${activeCard.id} gave ${effectValue!} mana to ${targetPlayer.id}`;
             break;
           case TargetTypes.SPELL:
+            const immediateTargetCard = targetPlayer.dropzone[0];
             switch (activeCard.ability.effect.subtype) {
               case TargetSubTypes.SPELL_COUNTER:
                 // delete the card
@@ -644,17 +653,15 @@ class RulesEngine {
                 break;
               case TargetSubTypes.SPELL_TIME:
                 // change time
-                if (targetPlayer.dropzone[0]) {
-                  targetPlayer.dropzone[0].timer! = Math.max(
-                    targetPlayer.dropzone[0].timer! + effectValue!,
+                if (immediateTargetCard) {
+                  immediateTargetCard.timer! = Math.max(
+                    immediateTargetCard.timer! + effectValue!,
                     0,
                   );
-                  updateEvent.updateLog = `${activeCard.id} changed the time of ${targetPlayer.dropzone[0].id} by ${effectValue!}`;
+                  updateEvent.updateLog = `${activeCard.id} changed the time of ${immediateTargetCard.id} by ${effectValue!}`;
                 }
                 break;
               case TargetSubTypes.SPELL_TYPE:
-                const immediateTargetCard = targetPlayer.dropzone[0];
-
                 console.log(
                   `useAbility: immediate, SPELL, SPELL_TYPE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
                 );
@@ -688,25 +695,41 @@ class RulesEngine {
                 break;
 
               default:
-                let targetCard = targetPlayer.dropzone[0];
-                console.log("SPELL TARGET card:", JSON.stringify(targetCard));
-                if (!targetCard) {
+                console.log(
+                  "SPELL TARGET card:",
+                  JSON.stringify(immediateTargetCard),
+                );
+                if (!immediateTargetCard) {
                   updateEvent.updateLog = `${activeCard.id} did nothing because there is no card to target`;
-                } else if (!targetCard.ability.effect.value) {
-                  updateEvent.updateLog = `${activeCard.id} did nothing because ${targetCard.id} has no value to affect`;
+                } else if (!immediateTargetCard.ability.effect.value) {
+                  updateEvent.updateLog = `${activeCard.id} did nothing because ${immediateTargetCard.id} has no value to affect`;
                 } else {
                   if (!activeCard.ability.effect.value) {
-                    targetCard.ability.effect.value = 0;
+                    immediateTargetCard.ability.effect.value = 0;
                     console.log("SPELL WITH FULL NEGATION OF VALUE");
                   } else {
-                    targetCard.ability.effect.value = Math.max(
-                      targetCard.ability.effect.value! + effectValue!,
+                    immediateTargetCard.ability.effect.value = Math.max(
+                      immediateTargetCard.ability.effect.value! + effectValue!,
                       0,
                     );
                   }
-                  updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard.id} to ${targetCard.ability.effect.value}`;
+                  updateEvent.updateLog = `${activeCard.id} changed the ${immediateTargetCard.ability.effect.type} of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.value}`;
                 }
                 break;
+            }
+            console.log("CHANGED CARD");
+            immediateTargetCard.changedContent = generateContent(
+              immediateTargetCard.ability,
+            );
+            if (
+              immediateTargetCard.changedContent != immediateTargetCard.content
+            ) {
+              console.log("CONTENT CHANGED");
+            }
+            if (immediateTargetCard.changedBy) {
+              immediateTargetCard.changedBy.push(activeCard.id);
+            } else {
+              immediateTargetCard.changedBy = [activeCard.id];
             }
             break;
         }
@@ -793,7 +816,7 @@ class AbilityQueue {
 
   cardList() {
     return this.abilities.map((c) => ({
-      cardId: c.card.id,
+      card: c.card,
       playerId: c.player,
     }));
   }
@@ -1026,7 +1049,7 @@ class FrontEndUpdate {
   dropzone: Map<string, Card[]> | null = null;
   health: Map<string, number> | null = null;
   mana: Map<string, number> | null = null;
-  abilityQueue: { cardId: string; playerId: string }[] | null = null;
+  abilityQueue: { card: Card; playerId: string }[] | null = null;
   tickPlayer: string | null;
   updateLog: string = "";
 

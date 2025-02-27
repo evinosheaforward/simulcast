@@ -1,6 +1,6 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
-
+import { diffWords } from "diff";
 import { getSnapshot } from "mobx-state-tree";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
@@ -89,6 +89,9 @@ export const CardDragOverlayComponent: React.FC<{ card: CardSnapshot }> = ({
 export const CardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
   card,
 }) => {
+  if (card.changedContent) {
+    console.log("CARD UPDATED CONTENT ", card.changedContent);
+  }
   return (
     <div className="select-none relative flex w-20 h-[120px] overflow-hidden shadow-md items-center justify-center">
       {/* Time - Top-left */}
@@ -117,9 +120,41 @@ export const CardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
 
       {/* Card Content - Bottom Center */}
       <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-11/12 text-center text-[6px] font-medium px-0.3 py-0 rounded">
-        {card.content}
+        {card.changedContent ? (
+          <DiffText original={card.content} updated={card.changedContent} />
+        ) : (
+          card.content
+        )}
       </div>
     </div>
+  );
+};
+
+const DiffText = ({
+  original,
+  updated,
+}: {
+  original: string;
+  updated: string;
+}) => {
+  // Compute the diff between original and updated texts
+  const diff = diffWords(original, updated);
+  console.log("diff detected: ", JSON.stringify(diff));
+
+  return (
+    <p>
+      {diff
+        .filter((part) => !part.removed)
+        .map((part, index) => {
+          // When text is added, highlight it in red
+          const style = part.added ? { color: "red" } : {};
+          return (
+            <span key={index} style={style}>
+              {part.value}
+            </span>
+          );
+        })}
+    </p>
   );
 };
 

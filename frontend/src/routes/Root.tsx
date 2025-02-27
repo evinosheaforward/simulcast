@@ -116,7 +116,7 @@ export default function Root() {
                 </ul>
               </li>
               <li>
-                Card abilties and values:
+                Card abilities and values:
                 <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-2">
                   <li>The number on a card is its "value".</li>
                   <li>
@@ -145,6 +145,26 @@ export default function Root() {
                         triggers on a damage card from the opponent. It expires
                         when triggered, or at the end of the round if it doesn't
                         trigger.
+                      </li>
+                      <li>
+                        Cards with triggers/expirations go into the "Ability
+                        Queue". Cards are placed in the Ability Queue
+                        left-to-right (like you you play cards) and they
+                        activate left-to-right as well. For example, if you play
+                        Blood, Sword, and Goblet in that order, Blood and Sword
+                        will be in the Ability Queue. When Goblet is cast,
+                        first, Blood will change it from healing to damage, then
+                        sword will increase the damage by two. However, if you
+                        ordered it Sword, Blood, Goblet then when Goblet is
+                        cast, Sword will not activate because Goblet will still
+                        be a healing spell at that point.
+                      </li>
+                      <li>
+                        Abilities in the ability queue are not modified once
+                        they are in the queue. If you play Crypt one turn and
+                        you opponent plays Cloud the next, the Cloud will not
+                        affect the Crypt trigger that happens at the end of the
+                        round.
                       </li>
                     </ul>
                   </li>
