@@ -146,5 +146,5 @@ dist
 .pnp.*
 
 # javascript (generate)
-*.js
+**/src/**/*.js
 
