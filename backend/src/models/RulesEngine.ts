@@ -279,19 +279,20 @@ class Game {
     const comboCards = playableCards
       .filter(
         (card: Card) =>
-          (card.ability.effect.type == TargetTypes.SPELL &&
+          card.id != "Steed" &&
+          ((card.ability.effect.type == TargetTypes.SPELL &&
             // Cards that modify others, like sword
             ((card.ability.trigger?.targetPlayer &&
               card.ability.trigger?.targetPlayer === PlayerTargets.SELF) ||
               (!card.ability.trigger?.targetPlayer &&
                 card.ability.effect.targetPlayer === PlayerTargets.SELF))) ||
-          // cards like bow, bloom
-          (card.ability.trigger &&
-            card.ability.trigger?.subtype === AbilityExpirations.NEXT_CARD &&
-            ((card.ability.trigger.targetPlayer &&
-              card.ability.trigger.targetPlayer === PlayerTargets.SELF) ||
-              (!card.ability.trigger.targetPlayer &&
-                card.ability.effect.targetPlayer === PlayerTargets.SELF))),
+            // cards like bow, bloom
+            (card.ability.trigger &&
+              card.ability.trigger?.subtype === AbilityExpirations.NEXT_CARD &&
+              ((card.ability.trigger.targetPlayer &&
+                card.ability.trigger.targetPlayer === PlayerTargets.SELF) ||
+                (!card.ability.trigger.targetPlayer &&
+                  card.ability.effect.targetPlayer === PlayerTargets.SELF)))),
       )
       // sort reverse-alphabetically - bad hueristic for bloom and bow go after wand, scepter, sword, but it works
       .sort((a, b) => b.id.localeCompare(a.id));
@@ -327,23 +328,22 @@ class Game {
             comboCards.unshift(scepterCard);
           }
         }
-        if (comboCards[0].id === "Wand") {
-          const scepterIndex = comboCards.findIndex(
-            (card) => card.id === "Scepter",
+        // swap blood and bloom (since reverse-alphabetical, they will be backwards)
+        if (
+          comboCards.some((c) => c.id === "Blood") &&
+          comboCards.some((c) => c.id === "Bloom")
+        ) {
+          const bloodIndex = comboCards.findIndex(
+            (card) => card.id === "Blood",
           );
-          if (scepterIndex > -1) {
-            // Remove the "Scepter" card from its current position
-            const [scepterCard] = comboCards.splice(scepterIndex, 1);
-            // Insert it at the front of the list
-            comboCards.unshift(scepterCard);
-          }
+          const bloomIndex = comboCards.findIndex(
+            (card) => card.id === "Bloom",
+          );
+          const blood = comboCards[bloodIndex];
+          const bloom = comboCards[bloomIndex];
+          comboCards.splice(bloodIndex, 1, bloom);
+          comboCards.splice(bloomIndex, 1, blood);
         }
-        console.log("BOT COMBO");
-        botPlayer.dropzone = comboCards;
-        botPlayer.hand = botPlayer.hand.filter(
-          (c: Card) => !comboCards.some((chosen) => chosen.id === c.id),
-        );
-        return;
       }
     }
     // play a boring, end of turn spell like torch
@@ -550,11 +550,17 @@ class RulesEngine {
       updateEvent.abilityQueue = this.abilityQueue.cardList();
     } else {
       // -- use ability now --
-      let targetPlayer: Player;
-      if (activeCard.ability.effect.targetPlayer === PlayerTargets.SELF) {
-        targetPlayer = this.players.filter((p) => p.id === owningPlayer)[0];
-      } else {
-        targetPlayer = this.players.filter((p) => p.id !== owningPlayer)[0];
+      let targetPlayers: Player[];
+      switch (activeCard.ability.effect.targetPlayer) {
+        case PlayerTargets.SELF:
+          targetPlayers = this.players.filter((p) => p.id === owningPlayer);
+          break;
+        case PlayerTargets.OPPONENT:
+          targetPlayers = this.players.filter((p) => p.id !== owningPlayer);
+          break;
+        case PlayerTargets.BOTH:
+          targetPlayers = this.players;
+          break;
       }
 
       let effectValue = activeCard.ability.effect.value;
@@ -564,177 +570,180 @@ class RulesEngine {
       }
 
       console.log(
-        `useAbility:\n  targetCard: ${targetCard}\n  targetPlayer: ${targetPlayer.id}`,
+        `useAbility:\n  targetCard: ${targetCard}\n  targetPlayers: ${targetPlayers.map((p) => p.id)}`,
       );
-      // apply effect to target Card - Note - we already know the trigger is valid
-      if (targetCard) {
-        switch (activeCard.ability.effect.subtype) {
-          case TargetSubTypes.SPELL_TYPE:
-            if (activeCard.ability.effect.spellChange?.type) {
-              targetCard.ability.effect.type =
-                activeCard.ability.effect.spellChange.type;
-              updateEvent.updateLog += `${activeCard.id} changed the type of ${targetCard!.id} to ${targetCard!.ability.effect.type}`;
-            }
-            if (
-              activeCard.ability.effect.spellChange?.targetPlayer &&
-              targetCard.ability.effect.targetPlayer !=
-                activeCard.ability.effect.spellChange!.targetPlayer
-            ) {
-              targetCard.ability.effect.targetPlayer =
-                activeCard.ability.effect.spellChange!.targetPlayer;
-              updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${targetCard!.id} to ${targetCard!.ability.effect.type}`;
-            }
-            if (
-              activeCard.ability.effect.spellChange?.value &&
-              targetCard.ability.effect.value &&
-              targetCard.ability.effect.value !=
-                activeCard.ability.effect.spellChange.value
-            ) {
-              targetCard.ability.effect.value =
-                activeCard.ability.effect.spellChange.value;
-              updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${targetCard!.id} to ${targetCard.ability.effect.value}`;
-            }
-            break;
-          default:
-            // careful of 0!
-            if (effectValue != null) {
-              targetCard!.ability.effect.value! = Math.max(
-                effectValue + targetCard!.ability.effect.value!,
-                0,
-              );
-            } else if (activeCard.ability.effect.prevention) {
-              // no effect.value for prevention => prevent all
-              targetCard!.ability.effect.value! = 0;
-            } else {
-              throw new Error(
-                "CARD MISCONFIGURED - no effect.value and not effect.prevention",
-              );
-            }
-            updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
-            break;
-        }
-        console.log("CHANGED CARD");
-        targetCard.changedContent = generateContent(targetCard.ability);
-        if (targetCard.changedBy) {
-          targetCard.changedBy.push(activeCard.id);
-        } else {
-          targetCard.changedBy = [activeCard.id];
-        }
-      } else {
-        // effect activates now, not on a card
-        switch (activeCard.ability.effect.type) {
-          case TargetTypes.DAMAGE:
-            // damage IS negative to health
-            targetPlayer.health -= effectValue!;
-            updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
-            updateEvent.updateLog = `${activeCard.id} dealt ${effectValue!} damage to ${targetPlayer.id}`;
-            break;
-          case TargetTypes.HEALTH:
-            targetPlayer.health += effectValue!;
-            updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
-            updateEvent.updateLog = `${activeCard.id} healed ${effectValue!} to ${targetPlayer.id}`;
-            break;
-          case TargetTypes.DRAW:
-            targetPlayer.cardDraw += effectValue!;
-            updateEvent.updateLog = `${activeCard.id} gave ${effectValue!} draw to ${targetPlayer.id}`;
-            break;
-          case TargetTypes.MANA:
-            targetPlayer.mana += effectValue!;
-            updateEvent.setMana(targetPlayer.id, targetPlayer.mana);
-            updateEvent.updateLog = `${activeCard.id} gave ${effectValue!} mana to ${targetPlayer.id}`;
-            break;
-          case TargetTypes.SPELL:
-            const immediateTargetCard = targetPlayer.dropzone[0];
-            switch (activeCard.ability.effect.subtype) {
-              case TargetSubTypes.SPELL_COUNTER:
-                // delete the card
-                let preventedCard = targetPlayer.dropzone.shift();
-                updateEvent.updateLog = `${activeCard.id} countered ${preventedCard ? preventedCard.id : "nothing"}`;
-                break;
-              case TargetSubTypes.SPELL_TIME:
-                // change time
-                if (immediateTargetCard) {
-                  immediateTargetCard.timer! = Math.max(
-                    immediateTargetCard.timer! + effectValue!,
-                    0,
-                  );
-                  updateEvent.updateLog = `${activeCard.id} changed the time of ${immediateTargetCard.id} by ${effectValue!}`;
-                }
-                break;
-              case TargetSubTypes.SPELL_TYPE:
-                console.log(
-                  `useAbility: immediate, SPELL, SPELL_TYPE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
-                );
-                if (immediateTargetCard) {
-                  if (activeCard.ability.effect.spellChange?.type) {
-                    immediateTargetCard.ability.effect.type =
-                      activeCard.ability.effect.spellChange.type;
-                    updateEvent.updateLog += `${activeCard.id} changed the type of ${immediateTargetCard!.id} to ${immediateTargetCard!.ability.effect.type}`;
-                  }
-                  if (
-                    activeCard.ability.effect.spellChange?.targetPlayer &&
-                    immediateTargetCard.ability.effect.targetPlayer !=
-                      activeCard.ability.effect.spellChange!.targetPlayer
-                  ) {
-                    immediateTargetCard.ability.effect.targetPlayer =
-                      activeCard.ability.effect.spellChange!.targetPlayer;
-                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.type}`;
-                  }
-                  if (
-                    activeCard.ability.effect.spellChange?.value != null &&
-                    immediateTargetCard.ability.effect.value != null
-                  ) {
-                    immediateTargetCard.ability.effect.value =
-                      activeCard.ability.effect.spellChange.value;
-                    updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.value}`;
-                    console.log("IT HAPPENED");
-                  }
-                } else {
-                  updateEvent.updateLog += `${activeCard.id} had no valid target`;
-                }
-                break;
-
-              default:
-                console.log(
-                  "SPELL TARGET card:",
-                  JSON.stringify(immediateTargetCard),
-                );
-                if (!immediateTargetCard) {
-                  updateEvent.updateLog = `${activeCard.id} did nothing because there is no card to target`;
-                } else if (!immediateTargetCard.ability.effect.value) {
-                  updateEvent.updateLog = `${activeCard.id} did nothing because ${immediateTargetCard.id} has no value to affect`;
-                } else {
-                  if (!activeCard.ability.effect.value) {
-                    immediateTargetCard.ability.effect.value = 0;
-                    console.log("SPELL WITH FULL NEGATION OF VALUE");
-                  } else {
-                    immediateTargetCard.ability.effect.value = Math.max(
-                      immediateTargetCard.ability.effect.value! + effectValue!,
-                      0,
-                    );
-                  }
-                  updateEvent.updateLog = `${activeCard.id} changed the ${immediateTargetCard.ability.effect.type} of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.value}`;
-                }
-                break;
-            }
-            if (immediateTargetCard) {
-              console.log("CHANGED CARD");
-              immediateTargetCard.changedContent = generateContent(
-                immediateTargetCard.ability,
-              );
-              if (
-                immediateTargetCard.changedContent !=
-                immediateTargetCard.content
-              ) {
-                console.log("CONTENT CHANGED");
+      for (const targetPlayer of targetPlayers) {
+        // apply effect to target Card - Note - we already know the trigger is valid
+        if (targetCard) {
+          switch (activeCard.ability.effect.subtype) {
+            case TargetSubTypes.SPELL_TYPE:
+              if (activeCard.ability.effect.spellChange?.type) {
+                targetCard.ability.effect.type =
+                  activeCard.ability.effect.spellChange.type;
+                updateEvent.updateLog += `${activeCard.id} changed the type of ${targetCard!.id} to ${targetCard!.ability.effect.type}`;
               }
-              if (immediateTargetCard.changedBy) {
-                immediateTargetCard.changedBy.push(activeCard.id);
-              } else {
-                immediateTargetCard.changedBy = [activeCard.id];
+              if (
+                activeCard.ability.effect.spellChange?.targetPlayer &&
+                targetCard.ability.effect.targetPlayer !=
+                  activeCard.ability.effect.spellChange!.targetPlayer
+              ) {
+                targetCard.ability.effect.targetPlayer =
+                  activeCard.ability.effect.spellChange!.targetPlayer;
+                updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${targetCard!.id} to ${targetCard!.ability.effect.type}`;
+              }
+              if (
+                activeCard.ability.effect.spellChange?.value &&
+                targetCard.ability.effect.value &&
+                targetCard.ability.effect.value !=
+                  activeCard.ability.effect.spellChange.value
+              ) {
+                targetCard.ability.effect.value =
+                  activeCard.ability.effect.spellChange.value;
+                updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${targetCard!.id} to ${targetCard.ability.effect.value}`;
               }
               break;
-            }
+            default:
+              // careful of 0!
+              if (effectValue != null) {
+                targetCard!.ability.effect.value! = Math.max(
+                  effectValue + targetCard!.ability.effect.value!,
+                  0,
+                );
+              } else if (activeCard.ability.effect.prevention) {
+                // no effect.value for prevention => prevent all
+                targetCard!.ability.effect.value! = 0;
+              } else {
+                throw new Error(
+                  "CARD MISCONFIGURED - no effect.value and not effect.prevention",
+                );
+              }
+              updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
+              break;
+          }
+          console.log("CHANGED CARD");
+          targetCard.changedContent = generateContent(targetCard.ability);
+          if (targetCard.changedBy) {
+            targetCard.changedBy.push(activeCard.id);
+          } else {
+            targetCard.changedBy = [activeCard.id];
+          }
+        } else {
+          // effect activates now, not on a card
+          switch (activeCard.ability.effect.type) {
+            case TargetTypes.DAMAGE:
+              // damage IS negative to health
+              targetPlayer.health -= effectValue!;
+              updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
+              updateEvent.updateLog = `${activeCard.id} dealt ${effectValue!} damage to ${targetPlayer.id}`;
+              break;
+            case TargetTypes.HEALTH:
+              targetPlayer.health += effectValue!;
+              updateEvent.setHealth(targetPlayer.id, targetPlayer.health);
+              updateEvent.updateLog = `${activeCard.id} healed ${effectValue!} to ${targetPlayer.id}`;
+              break;
+            case TargetTypes.DRAW:
+              targetPlayer.cardDraw += effectValue!;
+              updateEvent.updateLog = `${activeCard.id} gave ${effectValue!} draw to ${targetPlayer.id}`;
+              break;
+            case TargetTypes.MANA:
+              targetPlayer.mana += effectValue!;
+              updateEvent.setMana(targetPlayer.id, targetPlayer.mana);
+              updateEvent.updateLog = `${activeCard.id} gave ${effectValue!} mana to ${targetPlayer.id}`;
+              break;
+            case TargetTypes.SPELL:
+              const immediateTargetCard = targetPlayer.dropzone[0];
+              switch (activeCard.ability.effect.subtype) {
+                case TargetSubTypes.SPELL_COUNTER:
+                  // delete the card
+                  let preventedCard = targetPlayer.dropzone.shift();
+                  updateEvent.updateLog = `${activeCard.id} countered ${preventedCard ? preventedCard.id : "nothing"}`;
+                  break;
+                case TargetSubTypes.SPELL_TIME:
+                  // change time
+                  if (immediateTargetCard) {
+                    immediateTargetCard.timer! = Math.max(
+                      immediateTargetCard.timer! + effectValue!,
+                      0,
+                    );
+                    updateEvent.updateLog = `${activeCard.id} changed the time of ${immediateTargetCard.id} by ${effectValue!}`;
+                  }
+                  break;
+                case TargetSubTypes.SPELL_TYPE:
+                  console.log(
+                    `useAbility: immediate, SPELL, SPELL_TYPE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
+                  );
+                  if (immediateTargetCard) {
+                    if (activeCard.ability.effect.spellChange?.type) {
+                      immediateTargetCard.ability.effect.type =
+                        activeCard.ability.effect.spellChange.type;
+                      updateEvent.updateLog += `${activeCard.id} changed the type of ${immediateTargetCard!.id} to ${immediateTargetCard!.ability.effect.type}`;
+                    }
+                    if (
+                      activeCard.ability.effect.spellChange?.targetPlayer &&
+                      immediateTargetCard.ability.effect.targetPlayer !=
+                        activeCard.ability.effect.spellChange!.targetPlayer
+                    ) {
+                      immediateTargetCard.ability.effect.targetPlayer =
+                        activeCard.ability.effect.spellChange!.targetPlayer;
+                      updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.type}`;
+                    }
+                    if (
+                      activeCard.ability.effect.spellChange?.value != null &&
+                      immediateTargetCard.ability.effect.value != null
+                    ) {
+                      immediateTargetCard.ability.effect.value =
+                        activeCard.ability.effect.spellChange.value;
+                      updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.value}`;
+                      console.log("IT HAPPENED");
+                    }
+                  } else {
+                    updateEvent.updateLog += `${activeCard.id} had no valid target`;
+                  }
+                  break;
+
+                default:
+                  console.log(
+                    "SPELL TARGET card:",
+                    JSON.stringify(immediateTargetCard),
+                  );
+                  if (!immediateTargetCard) {
+                    updateEvent.updateLog = `${activeCard.id} did nothing because there is no card to target`;
+                  } else if (!immediateTargetCard.ability.effect.value) {
+                    updateEvent.updateLog = `${activeCard.id} did nothing because ${immediateTargetCard.id} has no value to affect`;
+                  } else {
+                    if (!activeCard.ability.effect.value) {
+                      immediateTargetCard.ability.effect.value = 0;
+                      console.log("SPELL WITH FULL NEGATION OF VALUE");
+                    } else {
+                      immediateTargetCard.ability.effect.value = Math.max(
+                        immediateTargetCard.ability.effect.value! +
+                          effectValue!,
+                        0,
+                      );
+                    }
+                    updateEvent.updateLog = `${activeCard.id} changed the ${immediateTargetCard.ability.effect.type} of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.value}`;
+                  }
+                  break;
+              }
+              if (immediateTargetCard) {
+                console.log("CHANGED CARD");
+                immediateTargetCard.changedContent = generateContent(
+                  immediateTargetCard.ability,
+                );
+                if (
+                  immediateTargetCard.changedContent !=
+                  immediateTargetCard.content
+                ) {
+                  console.log("CONTENT CHANGED");
+                }
+                if (immediateTargetCard.changedBy) {
+                  immediateTargetCard.changedBy.push(activeCard.id);
+                } else {
+                  immediateTargetCard.changedBy = [activeCard.id];
+                }
+                break;
+              }
+          }
         }
       }
     }

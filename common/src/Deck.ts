@@ -203,6 +203,45 @@ export const Deck: Card[] = [
     },
   },
   {
+    id: "Blast",
+    content: "Deal 4 damage to both players.",
+    cost: 2,
+    time: 2,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.BOTH,
+        type: TargetTypes.DAMAGE,
+        value: 2,
+        immediate: true,
+      },
+    },
+  },
+  {
+    id: "Curse",
+    content: "Change opponent's next healing spell to damage themself.",
+    cost: 2,
+    time: 3,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_TYPE,
+        spellChange: {
+          type: TargetTypes.DAMAGE,
+        },
+      },
+      trigger: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.HEALTH,
+        expiresOnTrigger: true,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      },
+    },
+  },
+  {
     id: "Lightning",
     content: "Deal 5 damage.",
     cost: 5,
@@ -273,6 +312,62 @@ export const Deck: Card[] = [
         type: TargetTypes.SPELL,
         subtype: TargetSubTypes.SPELL_COUNTER,
         immediate: true,
+      },
+    },
+  },
+  {
+    id: "Totem",
+    content: "Counter the opponent's next spell of mana cost 3 or less.",
+    cost: 2,
+    time: 3,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_COUNTER,
+      },
+      trigger: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        expiresOnTrigger: true,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      },
+      condition: {
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_MANA,
+        eval: Evaluation.LESS,
+        value: 4,
+      },
+    },
+  },
+  {
+    id: "Ward",
+    content: "Counter the opponent's next spell of mana cost 3 or greater.",
+    cost: 2,
+    time: 3,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_COUNTER,
+      },
+      trigger: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.SPELL,
+        expiresOnTrigger: true,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 1,
+      },
+      condition: {
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_MANA,
+        eval: Evaluation.GREATER,
+        value: 2,
       },
     },
   },
@@ -725,7 +820,7 @@ export const BOT_DECK = [
   "Tree",
   "Flame",
   "Harp",
-  "Quill",
+  "Blast",
   "Book",
   "Steed",
   "Well",
@@ -753,7 +848,7 @@ export const AGGRO_DECK = [
   "Tree",
   "Flame",
   "Harp",
-  "Quill",
+  "Blast",
   "Book",
   "Steed",
   "Well",

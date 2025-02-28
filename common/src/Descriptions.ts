@@ -13,7 +13,7 @@ import {
 
 // Mapping for immediate effects: the verb to use for normal vs. prevention cases.
 const immediateVerbs: Record<string, { normal: string; prevention: string }> = {
-  MANA: { normal: "gain", prevention: "loses" },
+  MANA: { normal: "gain", prevention: "lose" },
   HEALTH: { normal: "gain", prevention: "lose" },
   DAMAGE: { normal: "deal", prevention: "reduce damage by" },
   DRAW: { normal: "draw", prevention: "draws" },
@@ -21,11 +21,11 @@ const immediateVerbs: Record<string, { normal: string; prevention: string }> = {
 };
 
 const typeVerbWords: Record<string, string> = {
-  MANA:  "mana",
-  HEALTH:  "health",
-  DAMAGE:  "damage",
-  DRAW:  "cards", 
-  SPELL:  "spell", 
+  MANA: "mana",
+  HEALTH: "health",
+  DAMAGE: "damage",
+  DRAW: "cards",
+  SPELL: "spell",
   EXPIRATION: "turn",
 };
 
@@ -73,9 +73,8 @@ export function generateSpellModificationString(
   if (effect.subtype === TargetSubTypes.SPELL_TYPE) {
     if (effect.spellChange) {
       const spellType = trigger?.type ? typeWords[trigger.type] : "next";
-      const untilStr = trigger?.expiresOnTrigger || !trigger
-        ? "next"
-        : `until ${durationStr}`;
+      const untilStr =
+        trigger?.expiresOnTrigger || !trigger ? "next" : `until${durationStr}`;
 
       if (effect.spellChange.type) {
         return `change ${targetStr} ${untilStr} ${spellType} spell to a ${typeWords[effect.spellChange.type]} spell.`;
@@ -88,7 +87,7 @@ export function generateSpellModificationString(
             ? "you"
             : "";
       if (targetChange) {
-        return `change ${targetStr} ${spellType} spells to target ${targetChange} ${durationStr}.`;
+        return `change ${targetStr} ${spellType} spells to target ${targetChange}${durationStr}.`;
       }
 
       if (effect.spellChange.value !== undefined) {
@@ -102,7 +101,8 @@ export function generateSpellModificationString(
   const subtypeNoun = effect.subtype
     ? spellSubtypeWords[effect.subtype].noun
     : "value";
-  const whenStr = trigger?.expiresOnTrigger || !trigger ? "next" : `until ${durationStr}`;
+  const whenStr =
+    trigger?.expiresOnTrigger || !trigger ? "next" : `until${durationStr}`;
 
   return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value}.`;
 }
@@ -114,20 +114,20 @@ function getTimingString(
 ): string {
   if (!expiration) return "";
 
-  if (trigger?.expiresOnTrigger) {
-    return ""; // We'll handle this in the main text
-  }
+  // if (trigger?.expiresOnTrigger) {
+  //   return ""; // We'll handle this in the main text
+  // }
 
   if (condition?.type === TargetTypes.EXPIRATION) {
     if (condition.eval === Evaluation.EQUAL && condition.value === 1) {
-      return "next turn";
+      return " next turn";
     }
     if (condition.eval === Evaluation.LESS) {
       const rounds = condition.value || 0;
       if (rounds > 2) {
-        return `in ${rounds - 1} rounds`;
+        return ` in ${rounds - 1} rounds`;
       }
-      return "next turn";
+      return " next turn";
     }
   }
 
@@ -139,12 +139,15 @@ function getTimingString(
     return `in ${roundsToWait} rounds`;
   }
 
-  return "this turn";
+  return " this turn";
 }
 
 export function generateContent(ability: Ability): string {
-  const content = generateContentString(ability)
-  return content.split(". ").map((x) => x[0].toUpperCase() + x.substring(1)).join(". ")
+  const content = generateContentString(ability);
+  return content
+    .split(". ")
+    .map((x) => x[0].toUpperCase() + x.substring(1))
+    .join(". ");
 }
 
 export function generateContentString(ability: Ability): string {
@@ -208,10 +211,23 @@ export function generateContentString(ability: Ability): string {
       ? -1 * (effect.value || 0)
       : effect.value || 0;
     const type = typeVerbWords[effect.type];
-    if (effect.targetPlayer === PlayerTargets.SELF) {
-      return `${verb} ${Math.abs(value)} ${type}.`;
+
+    if (effect.type === TargetTypes.DAMAGE) {
+      if (effect.targetPlayer === PlayerTargets.SELF) {
+        return `${verb} ${Math.abs(value)} ${type} to yourself.`;
+      } else if (effect.targetPlayer === PlayerTargets.OPPONENT) {
+        return `${verb} ${Math.abs(value)} ${type} to your opponent.`;
+      } else if (effect.targetPlayer === PlayerTargets.BOTH) {
+        return `${verb} ${Math.abs(value)} ${type} to both players.`;
+      }
     } else {
-      return `Your opponent ${verb} ${Math.abs(value)} ${type}.`;
+      if (effect.targetPlayer === PlayerTargets.SELF) {
+        return `You ${verb} ${Math.abs(value)} ${type}.`;
+      } else if (effect.targetPlayer === PlayerTargets.OPPONENT) {
+        return `Your opponent ${verb}s ${Math.abs(value)} ${type}.`;
+      } else if (effect.targetPlayer === PlayerTargets.BOTH) {
+        return `Both players${verb} ${Math.abs(value)} ${type}.`;
+      }
     }
   }
 
@@ -224,7 +240,7 @@ export function generateContentString(ability: Ability): string {
     const subtypeNoun = effect.subtype
       ? spellSubtypeWords[effect.subtype].noun
       : "value";
-    const whenStr = trigger?.expiresOnTrigger ? "next" : "";
+    const whenStr = trigger?.expiresOnTrigger ? "next spell" : "spells";
     const spellTypeStr = trigger?.type ? ` ${typeWords[trigger.type]}` : "";
     const durationStr = getTimingString(expiration, trigger, condition);
 
@@ -239,13 +255,13 @@ export function generateContentString(ability: Ability): string {
           : condition.eval === Evaluation.GREATER
             ? "greater than"
             : "equal to";
-      return `counter your opponent's spells with ${condition.subtype === TargetSubTypes.SPELL_TIME ? "time" : condition.subtype === TargetSubTypes.SPELL_MANA ? "mana" : "value"} ${compareStr} ${condition.value} ${durationStr}.`;
+      return `counter your opponent's ${whenStr} with ${condition.subtype === TargetSubTypes.SPELL_TIME ? "time" : condition.subtype === TargetSubTypes.SPELL_MANA ? "mana cost" : "value"} ${compareStr} ${condition.value}${durationStr}.`;
     }
 
     if (effect.spellChange) {
       const spellType = trigger?.type ? typeWords[trigger.type] : "spell";
-        const spellPosition =
-          effect.targetPlayer === PlayerTargets.SELF ? "next" : "left-most";
+      const spellPosition =
+        effect.targetPlayer === PlayerTargets.SELF ? "next" : "left-most";
       const targetChange =
         effect.spellChange.targetPlayer === PlayerTargets.SELF
           ? "themselves"
@@ -253,29 +269,30 @@ export function generateContentString(ability: Ability): string {
             ? "you"
             : "";
 
-      if (durationStr) {
+      const nextStr = trigger?.expiresOnTrigger ? " next" : ""
+      if (trigger?.expiresOnTrigger) {
         if (effect.spellChange.type) {
-          return `convert ${targetStr} ${spellType} spells to ${typeWords[effect.spellChange.type]} spells ${durationStr}.`;
+          return `convert ${targetStr} next ${spellType} spell${durationStr} to a ${typeWords[effect.spellChange.type]} spell.`;
         }
         if (targetChange) {
-          return `change ${targetStr} ${spellType} spells to target ${targetChange} ${durationStr}.`;
-        }
-        if (effect.spellChange.value !== undefined) {
-          return `change the value of ${targetStr} ${spellType} spells to ${effect.spellChange.value} ${durationStr}.`;
-        }
-      } else {
-        if (effect.spellChange.type) {
-          return `convert ${targetStr} next ${spellType} spell to a ${typeWords[effect.spellChange.type]} spell.`;
-        }
-        if (targetChange) {
-          return `change ${targetStr} next ${spellType} spell to target ${targetChange}.`;
+          return `change ${targetStr} next ${spellType} spell${durationStr} to target ${targetChange}.`;
         }
         if (effect.spellChange.value !== undefined) {
           return `change the value of ${targetStr} ${spellPosition} spell to ${effect.spellChange.value}.`;
         }
+       
+      } else {
+if (effect.spellChange.type) {
+          return `convert ${targetStr} ${spellType} spells to ${typeWords[effect.spellChange.type]} spells${durationStr}.`;
+        }
+        if (targetChange) {
+          return `change ${targetStr} ${spellType} spells to target ${targetChange}${durationStr}.`;
+        }
+        if (effect.spellChange.value !== undefined) {
+          return `change the value of ${targetStr} ${spellType} spells to ${effect.spellChange.value}${durationStr}.`;
+        }
 
       }
-
     }
 
     // For immediate spell value changes without triggers
@@ -286,12 +303,12 @@ export function generateContentString(ability: Ability): string {
     if (effect.prevention) {
       if (effect.value === undefined) {
         const nextStr = trigger?.expiresOnTrigger ? "next " : "";
-        return `${preventionDescriptions[effect.type]} ${targetStr} ${nextStr}${spellTypeStr} spell ${durationStr}.`;
+        return `${preventionDescriptions[effect.type]} ${targetStr} ${nextStr}${spellTypeStr} spell${durationStr}.`;
       }
-      return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value} ${durationStr}.`;
+      return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value}${durationStr}.`;
     }
 
-    return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value} ${durationStr}.`;
+    return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value}${durationStr}.`;
   }
 
   // Handle triggered effects
@@ -306,13 +323,16 @@ export function generateContentString(ability: Ability): string {
         triggerTargetPlayer === PlayerTargets.OPPONENT
           ? "your opponent casts a spell"
           : "you cast a spell";
-      const suffix = triggerTargetPlayer === PlayerTargets.SELF ? " (including this one)" : ""
-        
+      const suffix =
+        triggerTargetPlayer === PlayerTargets.SELF
+          ? " (including this one)"
+          : "";
+
       if (trigger.expiresOnTrigger) {
         return `${immediateVerbs[effect.type]?.normal} ${value} ${type} when ${eventStr}.`;
       }
 
-      return `${immediateVerbs[effect.type]?.normal} ${value} ${type} whenever ${eventStr} ${durationStr}${suffix}.`;
+      return `${immediateVerbs[effect.type]?.normal} ${value} ${type} whenever ${eventStr}${durationStr}${suffix}.`;
     }
 
     if (expiration?.numActivations && expiration.numActivations > 2) {
@@ -323,7 +343,7 @@ export function generateContentString(ability: Ability): string {
 
   if (effect.prevention && effect.value === undefined) {
     const durationStr = getTimingString(expiration, trigger, condition);
-    return `${preventionDescriptions[effect.type]} ${effect.targetPlayer === PlayerTargets.OPPONENT ? "your opponent's" : "your"} ${typeWords[effect.type]} ${durationStr}.`;
+    return `${preventionDescriptions[effect.type]} ${effect.targetPlayer === PlayerTargets.OPPONENT ? "your opponent's" : "your"} ${typeWords[effect.type]}${durationStr}.`;
   }
   const value = effect.prevention
     ? -1 * (effect.value || 0)

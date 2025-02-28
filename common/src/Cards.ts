@@ -23,6 +23,7 @@ export enum AbilityExpirations {
 export enum PlayerTargets {
   SELF = "SELF",
   OPPONENT = "OPPONENT",
+  BOTH = "BOTH",
 }
 
 export enum Evaluation {
