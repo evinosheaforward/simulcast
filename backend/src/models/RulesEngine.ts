@@ -717,21 +717,24 @@ class RulesEngine {
                 }
                 break;
             }
-            console.log("CHANGED CARD");
-            immediateTargetCard.changedContent = generateContent(
-              immediateTargetCard.ability,
-            );
-            if (
-              immediateTargetCard.changedContent != immediateTargetCard.content
-            ) {
-              console.log("CONTENT CHANGED");
+            if (immediateTargetCard) {
+              console.log("CHANGED CARD");
+              immediateTargetCard.changedContent = generateContent(
+                immediateTargetCard.ability,
+              );
+              if (
+                immediateTargetCard.changedContent !=
+                immediateTargetCard.content
+              ) {
+                console.log("CONTENT CHANGED");
+              }
+              if (immediateTargetCard.changedBy) {
+                immediateTargetCard.changedBy.push(activeCard.id);
+              } else {
+                immediateTargetCard.changedBy = [activeCard.id];
+              }
+              break;
             }
-            if (immediateTargetCard.changedBy) {
-              immediateTargetCard.changedBy.push(activeCard.id);
-            } else {
-              immediateTargetCard.changedBy = [activeCard.id];
-            }
-            break;
         }
       }
     }

@@ -117,7 +117,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.HEALTH,
-        value: 2,
+        value: 3,
         immediate: true,
       },
     },
