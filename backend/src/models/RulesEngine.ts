@@ -101,7 +101,7 @@ class Game {
     this.botPlayerId = botPlayer.id;
     this.decks.set(botPlayer.id, {
       full: BOT_DECK,
-      current: [...BOT_DECK],
+      current: newDeck([], BOT_DECK),
       cycle: 1,
     });
     this.rulesEngine.goesFirst =

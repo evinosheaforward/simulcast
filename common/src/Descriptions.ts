@@ -152,35 +152,35 @@ export function generateContent(ability: Ability): string {
 
 export function generateContentString(ability: Ability): string {
   const { effect, trigger, expiration, condition } = ability;
-    let damageTarget: string
-    let nonDamageTarget: string
-    if (effect.type === TargetTypes.DAMAGE) {
-      switch (effect.targetPlayer) {
-        case PlayerTargets.SELF:
-          damageTarget = " to yourself"
-          break
-        case PlayerTargets.OPPONENT:
-          damageTarget = " to your opponent"
-          break
-        case PlayerTargets.BOTH:
-          damageTarget = " to both players"
-          break
-      }
-      nonDamageTarget = ""
-    } else {
-      damageTarget = ""
-      switch (effect.targetPlayer) {
-        case PlayerTargets.SELF:
-          nonDamageTarget = "you "
-          break
-        case PlayerTargets.OPPONENT:
-          nonDamageTarget = "your opponent "
-          break
-        case PlayerTargets.BOTH:
-          nonDamageTarget = "both players "
-          break
-      }
+  let damageTarget: string;
+  let nonDamageTarget: string;
+  if (effect.type === TargetTypes.DAMAGE) {
+    switch (effect.targetPlayer) {
+      case PlayerTargets.SELF:
+        damageTarget = " to yourself";
+        break;
+      case PlayerTargets.OPPONENT:
+        damageTarget = " to your opponent";
+        break;
+      case PlayerTargets.BOTH:
+        damageTarget = " to both players";
+        break;
     }
+    nonDamageTarget = "";
+  } else {
+    damageTarget = "";
+    switch (effect.targetPlayer) {
+      case PlayerTargets.SELF:
+        nonDamageTarget = "you ";
+        break;
+      case PlayerTargets.OPPONENT:
+        nonDamageTarget = "your opponent ";
+        break;
+      case PlayerTargets.BOTH:
+        nonDamageTarget = "both players ";
+        break;
+    }
+  }
 
   if (expiration?.triggerOnExpiration && !trigger) {
     const value = effect.value || 0;
@@ -240,7 +240,7 @@ export function generateContentString(ability: Ability): string {
       ? -1 * (effect.value || 0)
       : effect.value || 0;
     const type = typeVerbWords[effect.type];
-      return `${nonDamageTarget}${verb} ${Math.abs(value)} ${type}${damageTarget}.`;
+    return `${nonDamageTarget}${verb} ${Math.abs(value)} ${type}${damageTarget}.`;
   }
 
   // Handle spell modifications
@@ -281,7 +281,6 @@ export function generateContentString(ability: Ability): string {
             ? "you"
             : "";
 
-      const nextStr = trigger?.expiresOnTrigger ? " next" : ""
       if (trigger?.expiresOnTrigger) {
         if (effect.spellChange.type) {
           return `convert ${targetStr} next ${spellType} spell${durationStr} to a ${typeWords[effect.spellChange.type]} spell.`;
@@ -292,9 +291,8 @@ export function generateContentString(ability: Ability): string {
         if (effect.spellChange.value !== undefined) {
           return `change the value of ${targetStr} ${spellPosition} spell to ${effect.spellChange.value}.`;
         }
-       
       } else {
-if (effect.spellChange.type) {
+        if (effect.spellChange.type) {
           return `convert ${targetStr} ${spellType} spells to ${typeWords[effect.spellChange.type]} spells${durationStr}.`;
         }
         if (targetChange) {
@@ -303,7 +301,6 @@ if (effect.spellChange.type) {
         if (effect.spellChange.value !== undefined) {
           return `change the value of ${targetStr} ${spellType} spells to ${effect.spellChange.value}${durationStr}.`;
         }
-
       }
     }
 
@@ -320,7 +317,7 @@ if (effect.spellChange.type) {
       return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value}${durationStr}.`;
     }
 
-    return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value}${durationStr}.`;
+    return `${actionVerb} the ${subtypeNoun} of ${targetStr}${spellTypeStr === "next" ? "" : spellTypeStr} ${whenStr} by ${effect.value}${durationStr}.`;
   }
 
   // Handle triggered effects
@@ -329,7 +326,6 @@ if (effect.spellChange.type) {
     const value = effect.value || 0;
     const type = typeVerbWords[effect.type];
     const durationStr = getTimingString(expiration, trigger, condition);
-
 
     if (trigger.subtype === AbilityExpirations.NEXT_CARD) {
       const eventStr =
