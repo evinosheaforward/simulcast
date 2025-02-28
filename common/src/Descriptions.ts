@@ -152,6 +152,35 @@ export function generateContent(ability: Ability): string {
 
 export function generateContentString(ability: Ability): string {
   const { effect, trigger, expiration, condition } = ability;
+    let damageTarget: string
+    let nonDamageTarget: string
+    if (effect.type === TargetTypes.DAMAGE) {
+      switch (effect.targetPlayer) {
+        case PlayerTargets.SELF:
+          damageTarget = " to yourself"
+          break
+        case PlayerTargets.OPPONENT:
+          damageTarget = " to your opponent"
+          break
+        case PlayerTargets.BOTH:
+          damageTarget = " to both players"
+          break
+      }
+      nonDamageTarget = ""
+    } else {
+      damageTarget = ""
+      switch (effect.targetPlayer) {
+        case PlayerTargets.SELF:
+          nonDamageTarget = "you "
+          break
+        case PlayerTargets.OPPONENT:
+          nonDamageTarget = "your opponent "
+          break
+        case PlayerTargets.BOTH:
+          nonDamageTarget = "both players "
+          break
+      }
+    }
 
   if (expiration?.triggerOnExpiration && !trigger) {
     const value = effect.value || 0;
@@ -204,31 +233,14 @@ export function generateContentString(ability: Ability): string {
     }
 
     if (effect.prevention && effect.type === TargetTypes.DRAW) {
-      return `your opponent draws ${effect.value} fewer cards next turn.`;
+      return `${nonDamageTarget}${verb} ${effect.value} fewer cards next turn.`;
     }
 
     const value = effect.prevention
       ? -1 * (effect.value || 0)
       : effect.value || 0;
     const type = typeVerbWords[effect.type];
-
-    if (effect.type === TargetTypes.DAMAGE) {
-      if (effect.targetPlayer === PlayerTargets.SELF) {
-        return `${verb} ${Math.abs(value)} ${type} to yourself.`;
-      } else if (effect.targetPlayer === PlayerTargets.OPPONENT) {
-        return `${verb} ${Math.abs(value)} ${type} to your opponent.`;
-      } else if (effect.targetPlayer === PlayerTargets.BOTH) {
-        return `${verb} ${Math.abs(value)} ${type} to both players.`;
-      }
-    } else {
-      if (effect.targetPlayer === PlayerTargets.SELF) {
-        return `You ${verb} ${Math.abs(value)} ${type}.`;
-      } else if (effect.targetPlayer === PlayerTargets.OPPONENT) {
-        return `Your opponent ${verb}s ${Math.abs(value)} ${type}.`;
-      } else if (effect.targetPlayer === PlayerTargets.BOTH) {
-        return `Both players${verb} ${Math.abs(value)} ${type}.`;
-      }
-    }
+      return `${nonDamageTarget}${verb} ${Math.abs(value)} ${type}${damageTarget}.`;
   }
 
   // Handle spell modifications
@@ -318,6 +330,7 @@ if (effect.spellChange.type) {
     const type = typeVerbWords[effect.type];
     const durationStr = getTimingString(expiration, trigger, condition);
 
+
     if (trigger.subtype === AbilityExpirations.NEXT_CARD) {
       const eventStr =
         triggerTargetPlayer === PlayerTargets.OPPONENT
@@ -329,15 +342,15 @@ if (effect.spellChange.type) {
           : "";
 
       if (trigger.expiresOnTrigger) {
-        return `${immediateVerbs[effect.type]?.normal} ${value} ${type} when ${eventStr}.`;
+        return `${nonDamageTarget}${immediateVerbs[effect.type]?.normal} ${value} ${type}${damageTarget} when ${eventStr}.`;
       }
 
-      return `${immediateVerbs[effect.type]?.normal} ${value} ${type} whenever ${eventStr}${durationStr}${suffix}.`;
+      return `${nonDamageTarget}${immediateVerbs[effect.type]?.normal} ${value} ${type}${damageTarget} whenever ${eventStr}${durationStr}${suffix}.`;
     }
 
     if (expiration?.numActivations && expiration.numActivations > 2) {
       const rounds = expiration.numActivations - 1;
-      return `${immediateVerbs[effect.type]?.normal} ${value} ${type} at the end of the next ${rounds} rounds.`;
+      return `${nonDamageTarget}${immediateVerbs[effect.type]?.normal} ${value} ${type}${damageTarget} at the end of the next ${rounds} rounds.`;
     }
   }
 
