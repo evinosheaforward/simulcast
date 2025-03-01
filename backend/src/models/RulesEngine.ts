@@ -303,7 +303,6 @@ class Game {
       let comboMana =
         availableMana - comboCards.reduce((a, b) => a + b.cost, 0);
       let playableCount = 0;
-
       playableCards
         .sort((a, b) => a.cost - b.cost)
         .forEach((c) => {
@@ -344,6 +343,13 @@ class Game {
           comboCards.splice(bloodIndex, 1, bloom);
           comboCards.splice(bloomIndex, 1, blood);
         }
+        // Play the combo
+        console.log("BOT COMBO'ING");
+        botPlayer.dropzone = comboCards;
+        botPlayer.hand = botPlayer.hand.filter(
+          (c: Card) => !comboCards.some((chosen) => chosen.id === c.id),
+        );
+        return comboCards;
       }
     }
     // play a boring, end of turn spell like torch
