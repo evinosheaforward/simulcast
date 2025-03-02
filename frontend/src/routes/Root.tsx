@@ -19,6 +19,23 @@ export default function Root() {
         </div>
       </div>
 
+      {/* Welcome Section */}
+      <section className="grid grid-cols-1 place-items-center py-8 text-white">
+        <h2 className="text-2xl font-bold mb-4 text-center">Welcome!</h2>
+        <div className="w-full border border-gray-700 rounded bg-gray-800 grid grid-cols-1 place-items-center ">
+          <div className="w-full max-w-xl p-4">
+            SimulCast is a card game where both players play their cards at the
+            same time. Cards (aka spells) get "cast" in order from
+            left-to-right. All the cards in the game are shown below in the{" "}
+            <b>Card Inventory</b>. At the bottom of the page is the full{" "}
+            <b>Game Rules</b>.
+            <br />
+            The default deck is an "aggro" deck. If you make an account, you can
+            build your own decks.
+          </div>
+        </div>
+      </section>
+
       {/* Card Inventory Section */}
       <section className="items-center grid place-items-center w-full">
         <h2 className="text-2xl font-bold mb-2 mt-2 text-white text-center">
