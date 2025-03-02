@@ -9,6 +9,8 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const isLoggedIn = useIsLoggedIn();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   useEffect(() => {
     document.title = "SimulCast";
@@ -32,15 +34,26 @@ const PageFrame: React.FC<PageFrameProps> = ({ children }) => {
             </h1>
             <div className="inline-block group absolute right-0 top-0 w-24 mr-3">
               {isLoggedIn ? (
-                <div className="bg-red-600 rounded cursor-pointer mt-3 text-white w-full text-center font-bold rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform">
+                <div
+                  onClick={toggleDropdown}
+                  className="bg-red-600 rounded cursor-pointer mt-3 text-white w-full text-center font-bold rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform"
+                >
                   Account
                 </div>
               ) : (
-                <div className="bg-gray-700 rounded cursor-pointer mt-3 text-white w-full text-center font-bold rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform">
+                <div
+                  onClick={toggleDropdown}
+                  className="bg-gray-700 rounded cursor-pointer mt-3 text-white w-full text-center font-bold rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform"
+                >
                   Account
                 </div>
               )}
-              <div className="absolute bg-gray-700 text-white mt-1/2 text-center w-full rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div
+                className={
+                  "absolute bg-gray-700 text-white mt-1/2 text-center w-full rounded shadow-lg transition-opacity duration-200 " +
+                  `${dropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`
+                }
+              >
                 <ul className="text-center">
                   {isLoggedIn ? (
                     <>
