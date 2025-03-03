@@ -452,13 +452,13 @@ export const Deck: Card[] = [
     id: "Inferno",
     content:
       "After each of your opponent's spells activate this turn, they take 2 damage.",
-    cost: 6,
+    cost: 9,
     time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.DAMAGE,
-        value: 2,
+        value: 5,
       },
       trigger: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -696,6 +696,70 @@ export const Deck: Card[] = [
         type: TargetTypes.EXPIRATION,
         eval: Evaluation.LESS,
         value: 4,
+      },
+    },
+  },
+  {
+    id: "Sun",
+    content: "Deal 2 damage to your opponent at the end of the next 12 rounds.",
+    cost: 15,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.DAMAGE,
+        value: 3,
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 8,
+      },
+    },
+  },
+  {
+    id: "Oct",
+    content: "You opponent loses 1 mana for the next 8 rounds.",
+    cost: 8,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.OPPONENT,
+        type: TargetTypes.MANA,
+        prevention: true,
+        value: 1,
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 8,
+      },
+    },
+  },
+  {
+    id: "Land",
+    content: "Gain 2 mana for the 10 rounds.",
+    cost: 10,
+    time: 4,
+    ability: {
+      effect: {
+        targetPlayer: PlayerTargets.SELF,
+        type: TargetTypes.MANA,
+        value: 2,
+      },
+      trigger: {
+        type: TargetTypes.EXPIRATION,
+        subtype: AbilityExpirations.END_OF_ROUND,
+      },
+      expiration: {
+        type: AbilityExpirations.END_OF_ROUND,
+        numActivations: 10,
       },
     },
   },

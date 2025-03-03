@@ -40,3 +40,5 @@ frontend/images/Ward.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Blast.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Curse.png filter=lfs diff=lfs merge=lfs -text
 frontend/images/Totem.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Sun.png filter=lfs diff=lfs merge=lfs -text
+frontend/images/Land.png filter=lfs diff=lfs merge=lfs -text

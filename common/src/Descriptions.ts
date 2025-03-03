@@ -197,7 +197,7 @@ export function generateContentString(ability: Ability): string {
       } else if (rounds === 1) {
         timingStr = "at the end of next round";
       } else {
-        timingStr = `After the next ${rounds} rounds`;
+        timingStr = `after the next ${rounds} rounds`;
       }
     } else if (expiration.type === AbilityExpirations.NEXT_CARD) {
       const cards = expiration.numActivations;
@@ -345,8 +345,18 @@ export function generateContentString(ability: Ability): string {
     }
 
     if (expiration?.numActivations && expiration.numActivations > 2) {
-      const rounds = expiration.numActivations - 1;
-      return `${nonDamageTarget}${immediateVerbs[effect.type]?.normal} ${value} ${type}${damageTarget} at the end of the next ${rounds} rounds.`;
+      const verb = effect.prevention ? immediateVerbs[effect.type]?.prevention : immediateVerbs[effect.type].normal
+      if (!condition) {
+        return `${nonDamageTarget}${verb} ${value} ${type}${damageTarget} for the next ${expiration.numActivations} rounds.`;
+      } else if (
+        condition.eval === Evaluation.LESS &&
+        condition.value === expiration.numActivations
+      ) {
+        const rounds = expiration.numActivations - 1;
+        return `${nonDamageTarget}${verb} ${value} ${type}${damageTarget} at the end of the next ${rounds} rounds.`;
+      } else {
+        return `${nonDamageTarget}${verb} ${value} ${type}${damageTarget} until ${expiration.numActivations} ${expiration.type} if ${condition.subtype ? condition.subtype : condition.type} ${condition.value}.`;
+      }
     }
   }
 
