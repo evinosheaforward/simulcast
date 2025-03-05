@@ -81,27 +81,25 @@ export default function Root() {
                 begins.
               </li>
               <li>
-                Cards are revealed all at once and will activate in a
-                deterministic way.
+                Cards are revealed all at once. Cards are "Cast" from{" "}
+                <b>Left to Right</b>. When the round is Resolving, the Left-Most
+                card for each player "Ticks down" (⏳ attribute counts down),
+                alternating between players.
               </li>
               <li>
-                During the round resolution cards Cast from <b>Left to Right</b>
-                .
+                Whoever goes first will have their Left-Most card "Tick down"
+                (⏳ attribute goes down by one).
               </li>
               <li>
-                Whoever goes first will have their Left-Most card "Tick-down"
-                (⏳ counts down).
-              </li>
-              <li>
-                While it's your "Tick", if your Left-Most card has a ⏳ of 0,
-                you "Cast" that card.
+                While it's your turn (or "Tick"), if your Left-Most card has a
+                ⏳ of 0, that card is "Cast" (its ability activates).
               </li>
               <li>
                 If you have multiple cards with ⏳ of 0 in a row, they will cast
-                1 after another.
+                1 after another (for example this can happen if you use Steed).
               </li>
               <li>
-                Whoever <b>did not</b> have the last card cast in the round will
+                Whoever <b>did not</b> have the last card Cast in the round will
                 go <b>First</b> in the next round.
               </li>
               <li>

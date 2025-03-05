@@ -218,6 +218,11 @@ const DeckBuilderPageInterface: React.FC = () => {
         Deck Builder
         {loadingDeck ? " (Loading...)" : ""}
       </h2>
+      <body className="max-w-lg mb-4">
+        Create a deck of <b>{DECK_LENGTH}</b> cards. Press "Submit" to save your
+        deck and press "set as active" to make it the deck you use when you play
+        a game!
+      </body>
       <div className="mb-4">
         <label className="block mb-1 font-bold">Deck Name</label>
         <input

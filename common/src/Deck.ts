@@ -305,7 +305,7 @@ export const Deck: Card[] = [
     id: "Counter",
     content: "Remove the opponent's left-most spell from the board.",
     cost: 2,
-    time: 1,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -318,8 +318,8 @@ export const Deck: Card[] = [
   {
     id: "Totem",
     content: "Counter the opponent's next spell of mana cost 3 or less.",
-    cost: 2,
-    time: 3,
+    cost: 1,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -346,8 +346,8 @@ export const Deck: Card[] = [
   {
     id: "Ward",
     content: "Counter the opponent's next spell of mana cost 3 or greater.",
-    cost: 2,
-    time: 3,
+    cost: 1,
+    time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
