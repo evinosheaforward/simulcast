@@ -177,6 +177,10 @@ const GameStoreReorderable = types.compose(
       gameStatus: types.optional(types.string, "waiting"),
       health: types.optional(types.number, Number.MIN_SAFE_INTEGER),
       opponentHealth: types.optional(types.number, Number.MIN_SAFE_INTEGER),
+      opponentCardsInHand: types.optional(
+        types.number,
+        Number.MIN_SAFE_INTEGER,
+      ),
       goesFirst: types.optional(types.maybeNull(types.boolean), null),
       opponentMana: types.optional(types.number, Number.MIN_SAFE_INTEGER),
       gameOver: types.optional(types.boolean, false),
@@ -227,6 +231,9 @@ const GameStoreReorderable = types.compose(
       },
       setOpponentMana(newMana: number) {
         self.opponentMana = newMana;
+      },
+      setOpponentCardsInHand(cardsInHand: number) {
+        self.opponentCardsInHand = cardsInHand;
       },
       setError(newError: string | undefined) {
         self.error = newError;
@@ -286,6 +293,7 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
           self.setGoesFirst(player.goesFirst);
           self.setOpponentHealth(player.opponentHealth);
           self.setOpponentMana(player.opponentMana);
+          self.setOpponentCardsInHand(player.opponentCardsInHand);
         }
         self.clearOpponentDropzone();
         // todo refactor types to shared library
@@ -298,6 +306,9 @@ const GameStoreConnectable = GameStoreReorderable.actions((self) => ({
     self.socket.on("roundSubmitted", (opponentDropzone: any) => {
       console.log(`roundSubmitted -- ${JSON.stringify(opponentDropzone)}`);
       self.setOpponentDropzone(opponentDropzone);
+      self.setOpponentCardsInHand(
+        self.opponentCardsInHand - opponentDropzone.length,
+      );
       self.setGameStatus("RESOLUTION");
     });
     self.socket.on("resolveEvent", (updateEvent: any) => {

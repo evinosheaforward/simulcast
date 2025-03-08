@@ -137,10 +137,13 @@ class Game {
         p.mana = Math.max(p.mana + MANA_PER_TURN, 0);
         p.cardDraw = 0;
         p.dropzone = [];
-        [p.opponentHealth, p.opponentMana] = this.players
-          .filter((other) => other.id !== p.id)
-          .map((other) => [other.health, other.mana])[0];
         p.goesFirst = p.id == this.rulesEngine.goesFirst;
+      });
+      // Wait till hand drawn and mana updated to set opponent values
+      this.players.forEach((p) => {
+        [p.opponentHealth, p.opponentMana, p.opponentCardsInHand] = this.players
+          .filter((other) => other.id !== p.id)
+          .map((other) => [other.health, other.mana, other.hand.length])[0];
       });
     } catch (error) {
       if (error instanceof PlayerDiedError) {
@@ -428,6 +431,7 @@ export interface Player {
   cardDraw: number;
   opponentHealth?: number;
   opponentMana?: number;
+  opponentCardsInHand?: number;
   goesFirst?: boolean;
 }
 

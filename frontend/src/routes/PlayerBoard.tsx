@@ -288,36 +288,59 @@ const PlayerStats: React.FC<{ playerId: string; isPlayer: boolean }> = ({
   const gameData = useObservable(gameStore);
   const title = isPlayer ? "playerDropzoneText" : "opponentDropzoneText";
   return (
-    <div className="text-center text-white">
-      <p id={title}>
-        {gameData.gameStatus != "PLAY" &&
-        gameData.tick &&
-        gameData.tick == playerId
-          ? "⏳"
-          : "  "}{" "}
-        <b>{playerId ? `${playerId}: ` : isPlayer ? "You: " : "Opponent: "}</b>
-        Health:{" "}
-        <span className="font-bold">
-          {isPlayer
-            ? gameData.health === Number.MIN_SAFE_INTEGER
-              ? " "
-              : gameData.health
-            : gameData.opponentHealth === Number.MIN_SAFE_INTEGER
-              ? " "
-              : gameData.opponentHealth}
+    <div className="flex flex-nowrap justify-center">
+      <div className="relative inline-block">
+        <span className="absolute left-0 -translate-x-full whitespace-nowrap">
+          {gameData.gameStatus != "PLAY" &&
+          gameData.tick &&
+          gameData.tick == playerId
+            ? "⏳ "
+            : "   "}
         </span>
-        {"    /    "}
-        Mana:{" "}
-        <span className="font-bold">
-          {isPlayer
-            ? gameData.mana === Number.MIN_SAFE_INTEGER
-              ? " "
-              : gameData.mana
-            : gameData.opponentMana === Number.MIN_SAFE_INTEGER
-              ? " "
-              : gameData.opponentMana}
+        <span className="text-center text-white whitespace-nowrap">
+          <p id={title}>
+            <b>
+              {playerId
+                ? `${playerId.trim()}: `
+                : isPlayer
+                  ? "You: "
+                  : "Opponent: "}
+            </b>
+            Health:{" "}
+            <span className="font-bold">
+              {isPlayer
+                ? gameData.health === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.health
+                : gameData.opponentHealth === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.opponentHealth}
+            </span>
+            {"    /    "}
+            Mana:{" "}
+            <span className="font-bold">
+              {isPlayer
+                ? gameData.mana === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.mana
+                : gameData.opponentMana === Number.MIN_SAFE_INTEGER
+                  ? " "
+                  : gameData.opponentMana}
+            </span>
+            {!isPlayer && (
+              <>
+                {"    /    "}
+                Cards In Hand:{" "}
+                <span className="font-bold">
+                  {gameData.opponentCardsInHand === Number.MIN_SAFE_INTEGER
+                    ? " "
+                    : gameData.opponentCardsInHand}
+                </span>
+              </>
+            )}
+          </p>
         </span>
-      </p>
+      </div>
     </div>
   );
 };
