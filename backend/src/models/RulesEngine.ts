@@ -1114,6 +1114,7 @@ class FrontEndUpdate {
     return {
       dropzone: this.dropzone != null ? [...this.dropzone] : null,
       health: this.health != null ? [...this.health] : null,
+      mana: this.mana != null ? [...this.mana] : null,
       tick: this.tickPlayer,
       updateLog: this.updateLog,
       abilityQueue: this.abilityQueue,
