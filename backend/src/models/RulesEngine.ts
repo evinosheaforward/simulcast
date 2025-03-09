@@ -87,7 +87,7 @@ class Game {
 
   addBot() {
     this.isBotGame = true;
-    const name = "BOT-" + randomName();
+    const name = "BOT-" + randomName(1);
     const botPlayer: Player = {
       id: name,
       hand: [],

@@ -5,10 +5,10 @@ import {
   animals,
 } from "unique-names-generator";
 
-export const randomName = () => {
+export const randomName = (n: number = 2) => {
   return uniqueNamesGenerator({
     dictionaries: [adjectives, colors, animals], // three dictionaries of words
     separator: "-", // use '-' to join words
-    length: 2, // number of words
+    length: n, // number of words
   });
 };

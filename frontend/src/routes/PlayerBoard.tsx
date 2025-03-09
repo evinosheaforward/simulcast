@@ -294,8 +294,8 @@ const PlayerStats: React.FC<{ playerId: string; isPlayer: boolean }> = ({
           {gameData.gameStatus != "PLAY" &&
           gameData.tick &&
           gameData.tick == playerId
-            ? "⏳ "
-            : "   "}
+            ? "⏳"
+            : ""}
         </span>
         <span className="text-center text-white whitespace-nowrap">
           <p id={title}>
@@ -316,7 +316,7 @@ const PlayerStats: React.FC<{ playerId: string; isPlayer: boolean }> = ({
                   ? " "
                   : gameData.opponentHealth}
             </span>
-            {"    /    "}
+            {" / "}
             Mana:{" "}
             <span className="font-bold">
               {isPlayer
@@ -329,8 +329,8 @@ const PlayerStats: React.FC<{ playerId: string; isPlayer: boolean }> = ({
             </span>
             {!isPlayer && (
               <>
-                {"    /    "}
-                Cards In Hand:{" "}
+                {" / "}
+                Cards:{" "}
                 <span className="font-bold">
                   {gameData.opponentCardsInHand === Number.MIN_SAFE_INTEGER
                     ? " "
