@@ -19,6 +19,7 @@ import {
   MAX_DECK_CYCLES,
   BOT_DECK,
   generateContent,
+  MIN_HAND_SIZE,
 } from "simulcast-common";
 import { getUserDeck } from "./DeckStore";
 
@@ -208,7 +209,7 @@ class Game {
 
   drawHand(delta: number = 0, playerId: string, currentHand: Card[]): Card[] {
     const drawCount = Math.max(
-      delta + Math.max(CARDS_PER_TURN - currentHand.length, 1),
+      delta + Math.max(MIN_HAND_SIZE - currentHand.length, CARDS_PER_TURN),
       0,
     );
     let array = this.decks.get(playerId)!.current;
