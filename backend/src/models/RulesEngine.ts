@@ -613,22 +613,31 @@ class RulesEngine {
                 updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${targetCard!.id} to ${targetCard.ability.effect.value}`;
               }
               break;
+            case TargetSubTypes.SPELL_COUNTER:
+              console.error(
+                `ERROR COUNTER: ${activeCard.id} trying to target a card?!... (${targetCard.id})`,
+              );
+              break;
             default:
-              // careful of 0!
-              if (effectValue != null) {
-                targetCard!.ability.effect.value! = Math.max(
-                  effectValue + targetCard!.ability.effect.value!,
-                  0,
-                );
-              } else if (activeCard.ability.effect.prevention) {
-                // no effect.value for prevention => prevent all
-                targetCard!.ability.effect.value! = 0;
+              if (targetCard!.ability.effect.value) {
+                // careful of 0!
+                if (effectValue != null) {
+                  targetCard!.ability.effect.value! = Math.max(
+                    effectValue + targetCard!.ability.effect.value!,
+                    0,
+                  );
+                } else if (activeCard.ability.effect.prevention) {
+                  // no effect.value for prevention => prevent all
+                  targetCard!.ability.effect.value! = 0;
+                } else {
+                  throw new Error(
+                    "CARD MISCONFIGURED - no effect.value and not effect.prevention",
+                  );
+                }
+                updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
               } else {
-                throw new Error(
-                  "CARD MISCONFIGURED - no effect.value and not effect.prevention",
-                );
+                updateEvent.updateLog = `${activeCard.id} did nothing to ${targetCard.id} because it has no value.`;
               }
-              updateEvent.updateLog = `${activeCard.id} changed the ${targetCard.ability.effect.type} of ${targetCard!.id} to ${targetCard!.ability.effect.value!}`;
               break;
           }
           console.log("CHANGED CARD");
