@@ -11,7 +11,7 @@ export const DECK_LENGTH = 25;
 export const MAX_DECK_CYCLES = 5;
 export const MIN_HAND_SIZE = 5;
 export const CARDS_PER_TURN = 2;
-export const MANA_PER_TURN = 5;
+export const MANA_PER_TURN = 6;
 
 export function populate(cards: Card[]) {
   return structuredClone(

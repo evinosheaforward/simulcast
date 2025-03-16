@@ -190,8 +190,8 @@ export const PlayerCardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
   return (
     <motion.div
       layout
-      whileHover={{ scale: 1.75, zIndex: 500 }}
-      whileTap={{ scale: 1.75, zIndex: 500 }}
+      whileHover={{ scale: 1.75, zIndex: 1000 }}
+      whileTap={{ scale: 1.75, zIndex: 1000 }}
       className="flex items-center justify-center text-center w-20 h-[120px] border-2 border-gray-700 rounded-lg bg-[#564434] text-white shadow-md"
     >
       <CardFrameComponent card={card as Card} />

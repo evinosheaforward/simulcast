@@ -861,6 +861,11 @@ class AbilityQueue {
   }
 
   add(card: Card, player: string) {
+    if (card.ability.expiration?.numActivations) {
+      card.timer = card.ability.expiration?.numActivations;
+    } else if (card.ability.trigger?.expiresOnTrigger) {
+      card.timer = 1;
+    }
     this.abilities.push({
       card: card,
       player: player,
@@ -953,6 +958,9 @@ class AbilityQueue {
         )
       ) {
         currentTrigger.ability.expiration!.numActivations -= 1;
+        if (currentTrigger.timer != null) {
+          currentTrigger.timer -= 1;
+        }
         if (currentTrigger.ability.expiration!.numActivations < 1) {
           console.log("should expire ability");
           if (currentTrigger.ability.expiration?.triggerOnExpiration) {
