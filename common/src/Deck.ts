@@ -452,14 +452,14 @@ export const Deck: Card[] = [
   {
     id: "Inferno",
     content:
-      "After each of your opponent's spells activate this turn, they take 2 damage.",
+      "After each of your opponent's spells activate this turn, they take 4 damage.",
     cost: 9,
     time: 2,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.DAMAGE,
-        value: 5,
+        value: 4,
       },
       trigger: {
         targetPlayer: PlayerTargets.OPPONENT,
@@ -503,7 +503,7 @@ export const Deck: Card[] = [
   {
     id: "Wand",
     content: "Increase the value by 1 for your spells this turn.",
-    cost: 2,
+    cost: 3,
     time: 3,
     ability: {
       effect: {
@@ -709,7 +709,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.DAMAGE,
-        value: 3,
+        value: 5,
       },
       trigger: {
         type: TargetTypes.EXPIRATION,
@@ -717,13 +717,13 @@ export const Deck: Card[] = [
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
-        numActivations: 8,
+        numActivations: 4,
       },
     },
   },
   {
     id: "Oct",
-    content: "You opponent loses 1 mana for the next 8 rounds.",
+    content: "You opponent loses 2 mana for the next 8 rounds.",
     cost: 8,
     time: 4,
     ability: {
@@ -731,7 +731,7 @@ export const Deck: Card[] = [
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.MANA,
         prevention: true,
-        value: 1,
+        value: 2,
       },
       trigger: {
         type: TargetTypes.EXPIRATION,
@@ -745,14 +745,14 @@ export const Deck: Card[] = [
   },
   {
     id: "Land",
-    content: "Gain 2 mana for the 10 rounds.",
+    content: "Gain 5 mana for the 5 rounds.",
     cost: 10,
     time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.MANA,
-        value: 2,
+        value: 5,
       },
       trigger: {
         type: TargetTypes.EXPIRATION,
@@ -760,20 +760,20 @@ export const Deck: Card[] = [
       },
       expiration: {
         type: AbilityExpirations.END_OF_ROUND,
-        numActivations: 10,
+        numActivations: 5,
       },
     },
   },
   {
     id: "Well",
-    content: "Gain 2 mana at the end of the next two rounds.",
+    content: "Gain 3 mana at the end of the next two rounds.",
     cost: 2,
     time: 4,
     ability: {
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.MANA,
-        value: 2,
+        value: 3,
       },
       trigger: {
         type: TargetTypes.EXPIRATION,
@@ -793,7 +793,7 @@ export const Deck: Card[] = [
   {
     id: "Moon",
     content:
-      "Counter all spells your opponent plays that have lower than 3 time this turn",
+      "Counter all spells your opponent plays that have lower than 4 time this turn",
     cost: 4,
     time: 4,
     ability: {
@@ -814,7 +814,7 @@ export const Deck: Card[] = [
         type: TargetTypes.SPELL,
         subtype: TargetSubTypes.SPELL_TIME,
         eval: Evaluation.LESS,
-        value: 3,
+        value: 4,
       },
     },
   },
