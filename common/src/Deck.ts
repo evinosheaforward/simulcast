@@ -80,7 +80,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_CHANGE,
         spellChange: {
           value: 1,
         },
@@ -226,7 +226,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_CHANGE,
         spellChange: {
           type: TargetTypes.DAMAGE,
         },
@@ -395,7 +395,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_CHANGE,
         spellChange: {
           targetPlayer: PlayerTargets.SELF,
           type: TargetTypes.DRAW,
@@ -592,7 +592,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_CHANGE,
         immediate: true,
         spellChange: {
           value: 0,
@@ -609,7 +609,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_CHANGE,
         spellChange: {
           type: TargetTypes.DRAW,
         },
@@ -635,7 +635,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
         type: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_CHANGE,
         spellChange: {
           targetPlayer: PlayerTargets.SELF,
         },
@@ -847,7 +847,7 @@ export const Deck: Card[] = [
       effect: {
         targetPlayer: PlayerTargets.SELF,
         type: TargetTypes.SPELL,
-        subtype: TargetSubTypes.SPELL_TYPE,
+        subtype: TargetSubTypes.SPELL_CHANGE,
         spellChange: {
           targetPlayer: PlayerTargets.OPPONENT,
           type: TargetTypes.DAMAGE,
@@ -864,6 +864,14 @@ export const Deck: Card[] = [
     },
   },
 ];
+
+// side effect functions
+export function updateCardAttributes(c: Card) {
+  c.type = c.ability.effect.subtype || c.ability.effect.type;
+  c.value = c.ability.effect.value;
+}
+
+Deck.forEach(updateCardAttributes);
 
 function shuffle(array: any[]) {
   // Create a copy of the array to avoid mutating the original

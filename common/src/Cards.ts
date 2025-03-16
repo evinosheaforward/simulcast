@@ -12,7 +12,7 @@ export enum TargetSubTypes {
   SPELL_TIME = "SPELL_TIME",
   SPELL_MANA = "SPELL_MANA",
   SPELL_COUNTER = "SPELL_COUNTER",
-  SPELL_TYPE = "SPELL_TYPE",
+  SPELL_CHANGE = "SPELL_CHANGE",
 }
 
 export enum AbilityExpirations {
@@ -87,6 +87,8 @@ export type Card = {
   time: number;
   ability: Ability;
   timer?: number | null;
+  value?: number;
+  type?: string;
 };
 
 export interface ActiveAbility {

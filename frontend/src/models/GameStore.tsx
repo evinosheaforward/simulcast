@@ -29,6 +29,8 @@ const randomName = () => {
 export const CardModel = types.model("Card", {
   id: types.string,
   content: types.string,
+  type: types.maybe(types.string),
+  value: types.maybe(types.number),
   changedContent: types.maybe(types.string),
   changedBy: types.maybe(types.array(types.string)),
   cost: types.number,

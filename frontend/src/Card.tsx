@@ -7,6 +7,18 @@ import { motion } from "framer-motion";
 import { DragOverlay } from "@dnd-kit/core";
 import { Card, CardSnapshot } from "./models/GameStore";
 
+const CARD_SYMBOLS = new Map<string, string>([
+  ["DAMAGE", "💥"],
+  ["HEALTH", "❤️"],
+  ["DRAW", "📜"],
+  ["MANA", "🔮"],
+  ["SPELL", "✨"],
+  ["SPELL_CHANGE", "🌀"],
+  ["SPELL_MANA", "🔮"],
+  ["SPELL_TIME", "⏳"],
+  ["SPELL_COUNTER", "❌"],
+]);
+
 interface CardComponentProps {
   card: Card;
   containerId: string;
@@ -95,19 +107,33 @@ export const CardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
   return (
     <div className="select-none relative flex w-20 h-[120px] overflow-hidden shadow-md items-center justify-center">
       {/* Time - Top-left */}
-      <div className="absolute top-0 left-0 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
+      <div className="absolute top-0 left-0 text-[0.5rem] font-bold bg-transparent px-1 py-0.5 rounded">
         ⏳{card.timer == null ? card.time : card.timer}
       </div>
 
       {/* Name - Top-center */}
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-[7px] text-center font-bold bg-transparent px-1 py-0.5 rounded">
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-[0.5rem] text-center font-bold bg-transparent px-1 py-0.5 rounded">
         {card.id}
       </div>
 
-      {/* Cost - Top-right */}
-      <div className="absolute top-0 right-0.5 text-[7px] font-bold bg-transparent px-1 py-0.5 rounded">
+      {/* Mana - Top-left */}
+      <div className="absolute top-0 right-0 text-[0.5rem] font-bold bg-transparent px-1 py-0.5 rounded">
         🔮{card.cost}
       </div>
+
+      {/* value - bottom-right */}
+      {card.value && (
+        <div className="absolute bottom-0.5 right-0.25 text-[0.5rem] font-bold bg-transparent px-1 py-0.5 rounded">
+          {card.value}
+        </div>
+      )}
+
+      {/* type - bottom-left */}
+      {card.type && CARD_SYMBOLS.get(card.type) && (
+        <div className="absolute bottom-0.5 left-0 text-[.5rem] font-bold bg-transparent px-1 py-0.5 rounded">
+          {CARD_SYMBOLS.get(card.type)}
+        </div>
+      )}
 
       {/* Card Image - Center Top */}
       <div className="absolute top-4 w-11/12 h-6/12 flex items-center justify-center bg-[#000000]">
@@ -119,7 +145,7 @@ export const CardFrameComponent: React.FC<{ card: CardSnapshot }> = ({
       </div>
 
       {/* Card Content - Bottom Center */}
-      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-11/12 text-center text-[6px] font-medium px-0.3 py-0 rounded">
+      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-11/12 text-center text-[0.33rem] font-medium px-0.3 py-0 rounded">
         {card.changedContent ? (
           <DiffText original={card.content} updated={card.changedContent} />
         ) : (

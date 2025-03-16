@@ -43,7 +43,7 @@ const spellSubtypeWords: Record<
   string,
   { noun: string; verb: string; prevention: string }
 > = {
-  SPELL_TYPE: { noun: "type", verb: "change", prevention: "" },
+  SPELL_CHANGE: { noun: "type", verb: "change", prevention: "" },
   SPELL_TIME: { noun: "time", verb: "increase", prevention: "decrease" },
   SPELL_MANA: { noun: "mana cost", verb: "increase", prevention: "decrease" },
   SPELL_COUNTER: { noun: "counter", verb: "remove", prevention: "remove" },
@@ -70,7 +70,7 @@ export function generateSpellModificationString(
   const spellTypeStr = trigger?.type ? ` ${typeWords[trigger.type]}` : "";
 
   // Handle spell type changes
-  if (effect.subtype === TargetSubTypes.SPELL_TYPE) {
+  if (effect.subtype === TargetSubTypes.SPELL_CHANGE) {
     if (effect.spellChange) {
       const spellType = trigger?.type ? typeWords[trigger.type] : "next";
       const untilStr =
@@ -345,7 +345,9 @@ export function generateContentString(ability: Ability): string {
     }
 
     if (expiration?.numActivations && expiration.numActivations > 2) {
-      const verb = effect.prevention ? immediateVerbs[effect.type]?.prevention : immediateVerbs[effect.type].normal
+      const verb = effect.prevention
+        ? immediateVerbs[effect.type]?.prevention
+        : immediateVerbs[effect.type].normal;
       if (!condition) {
         return `${nonDamageTarget}${verb} ${value} ${type}${damageTarget} for the next ${expiration.numActivations} rounds.`;
       } else if (

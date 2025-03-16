@@ -20,6 +20,7 @@ import {
   BOT_DECK,
   generateContent,
   MIN_HAND_SIZE,
+  updateCardAttributes,
 } from "simulcast-common";
 import { getUserDeck } from "./DeckStore";
 
@@ -587,7 +588,7 @@ class RulesEngine {
         // apply effect to target Card - Note - we already know the trigger is valid
         if (targetCard) {
           switch (activeCard.ability.effect.subtype) {
-            case TargetSubTypes.SPELL_TYPE:
+            case TargetSubTypes.SPELL_CHANGE:
               if (activeCard.ability.effect.spellChange?.type) {
                 targetCard.ability.effect.type =
                   activeCard.ability.effect.spellChange.type;
@@ -647,6 +648,7 @@ class RulesEngine {
           } else {
             targetCard.changedBy = [activeCard.id];
           }
+          updateCardAttributes(targetCard);
         } else {
           // effect activates now, not on a card
           switch (activeCard.ability.effect.type) {
@@ -688,9 +690,9 @@ class RulesEngine {
                     updateEvent.updateLog = `${activeCard.id} changed the time of ${immediateTargetCard.id} by ${effectValue!}`;
                   }
                   break;
-                case TargetSubTypes.SPELL_TYPE:
+                case TargetSubTypes.SPELL_CHANGE:
                   console.log(
-                    `useAbility: immediate, SPELL, SPELL_TYPE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
+                    `useAbility: immediate, SPELL, SPELL_CHANGE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
                   );
                   if (immediateTargetCard) {
                     if (activeCard.ability.effect.spellChange?.type) {
@@ -761,6 +763,7 @@ class RulesEngine {
                 } else {
                   immediateTargetCard.changedBy = [activeCard.id];
                 }
+                updateCardAttributes(immediateTargetCard);
                 break;
               }
           }
