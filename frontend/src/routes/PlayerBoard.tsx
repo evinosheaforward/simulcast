@@ -57,6 +57,9 @@ const PlayerBoard: React.FC = () => {
       setTimeRemaining(ROUND_DURATION);
       return;
     }
+    if (gameData.isBotGame) {
+      setTimeRemaining(Number.MAX_SAFE_INTEGER);
+    }
     const timer = setInterval(() => {
       if (gameData.gameStatus === "PLAY") {
         setTimeRemaining((t) => t - 1);
@@ -256,8 +259,10 @@ const PlayerBoard: React.FC = () => {
             className="w-full justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-101"
             onClick={handleSubmitCards}
           >
-            Submit Early - You have {timeRemaining} second
-            {timeRemaining !== 1 ? "s" : ""}
+            {gameData.isBotGame
+              ? "Submit Cards for the Round"
+              : `Submit Early - You have ${timeRemaining} second` +
+                (timeRemaining !== 1 ? "s" : "")}
           </button>
         ) : (
           <button

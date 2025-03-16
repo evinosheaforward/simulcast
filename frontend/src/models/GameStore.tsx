@@ -189,6 +189,7 @@ const GameStoreReorderable = types.compose(
       tick: types.optional(types.maybeNull(types.string), null),
       updateLog: types.optional(types.array(types.string), []),
       abilityQueue: types.optional(types.array(AbilityQueueItemModel), []),
+      isBotGame: types.optional(types.boolean, false),
       error: types.maybe(types.string),
     })
     .volatile((_) => ({
@@ -396,6 +397,7 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
       const data = yield response.json();
       self.gameId = data.gameId;
       self.playerId = data.playerId;
+      self.isBotGame = true;
       // Once the game is created, establish the socket connection.
       self.connectSocket();
     } catch (error: any) {
