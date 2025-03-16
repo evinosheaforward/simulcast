@@ -7,14 +7,14 @@ import { motion } from "framer-motion";
 import { DragOverlay } from "@dnd-kit/core";
 import { Card, CardSnapshot } from "./models/GameStore";
 
-const CARD_SYMBOLS = new Map<string, string>([
+export const CARD_SYMBOLS = new Map<string, string>([
   ["DAMAGE", "💥"],
   ["HEALTH", "❤️"],
   ["DRAW", "📜"],
   ["MANA", "🔮"],
   ["SPELL", "✨"],
   ["SPELL_CHANGE", "🌀"],
-  ["SPELL_MANA", "🔮"],
+  ["SPELL_MANA", "???"],
   ["SPELL_TIME", "⏳"],
   ["SPELL_COUNTER", "❌"],
 ]);

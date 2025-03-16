@@ -1,6 +1,11 @@
 import React from "react";
-import { PlayerCardFrameComponent } from "../Card";
-import { CARDS_PER_TURN, MANA_PER_TURN, TargetTypes } from "simulcast-common";
+import { CARD_SYMBOLS, PlayerCardFrameComponent } from "../Card";
+import {
+  CARDS_PER_TURN,
+  MANA_PER_TURN,
+  TargetSubTypes,
+  TargetTypes,
+} from "simulcast-common";
 import { CardSnapshot } from "../models/GameStore";
 import { ROUND_DURATION } from "./PlayerBoard";
 import { sortedDeck } from "../Utilities";
@@ -96,7 +101,8 @@ export default function Root() {
               </li>
               <li>
                 If you have multiple cards with ⏳ of 0 in a row, they will cast
-                1 after another (for example this can happen if you use Steed).
+                one after another (for example this can happen if you use Steed
+                because it reduces the time of your next spell).
               </li>
               <li>
                 Whoever <b>did not</b> have the last card Cast in the round will
@@ -133,12 +139,49 @@ export default function Root() {
               <li>
                 Card abilities and values:
                 <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-2">
-                  <li>The number on a card is its "value".</li>
+                  <li>
+                    The number in the bottom right of card is its "value". For
+                    example for a card that says "Deal 3 damage" the value is.
+                  </li>
                   <li>
                     Cards have the following types:{" "}
-                    {Object.values(TargetTypes)
+                    {(Object.values(TargetTypes) as string[])
+                      .concat(Object.values(TargetSubTypes) as string[])
                       .filter((t) => t != TargetTypes.EXPIRATION)
+                      .filter((t) => t != TargetSubTypes.SPELL_MANA)
+                      .map((t) => (t == TargetTypes.SPELL ? "SPELL_VALUE" : t))
+                      .map(
+                        (t: string) =>
+                          t
+                            .toLowerCase()
+                            .split("_")
+                            .map(
+                              (s: string) =>
+                                s.charAt(0).toUpperCase() + s.slice(1),
+                            )
+                            .join(" ") +
+                          `: ${CARD_SYMBOLS.get(t == "SPELL_VALUE" ? "SPELL" : t)}`,
+                      )
                       .join(", ")}
+                    . The type of the card is denoted by its symbol in the
+                    bottom left corner of the card.
+                    <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-4">
+                      <li>
+                        Spell Value (✨) cards increase or decrease the value of
+                        another spell.
+                      </li>
+                      <li>
+                        Spell Time (⏳) cards change the Time of another spell.{" "}
+                      </li>
+                      <li>
+                        Spell Counter (❌) cards prevent a spell from being
+                        Cast.
+                      </li>
+                      <li>
+                        Spell Change (🌀) cards change the value, type, and/or
+                        target of spells.
+                      </li>
+                    </ul>
                   </li>
                   <li>
                     Cards can affect the value of other cards. For example Cloud
@@ -151,13 +194,13 @@ export default function Root() {
                     <ul className="text-left list-disc list-inside space-y-2 mt-1 ml-4">
                       <li>
                         Cards with triggers have conditions on when they
-                        activate. For example, Sword will activate on any card
-                        that deals damage (this includes, e.g. Bow).
+                        activate. For example, Sword will activate on your next
+                        card that deals damage (this includes, e.g. Bow).
                       </li>
                       <li>
                         Cards with triggers "expire". This means that their
-                        effect lasts until a certain time. For example, cloud
-                        triggers on a damage card from the opponent. It expires
+                        effect lasts until a certain time. For example, Cloud
+                        triggers on a damage card the opponent Casts. It expires
                         when triggered, or at the end of the round if it doesn't
                         trigger.
                       </li>
@@ -185,7 +228,6 @@ export default function Root() {
                   </li>
                 </ul>
               </li>
-              <li>Strategize based on your opponent's patterns to win!</li>
             </ul>
           </div>
         </div>
