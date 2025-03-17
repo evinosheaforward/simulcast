@@ -397,7 +397,7 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
       const data = yield response.json();
       self.gameId = data.gameId;
       self.playerId = data.playerId;
-      self.isBotGame = true;
+      self.isBotGame = isBotGame;
       // Once the game is created, establish the socket connection.
       self.connectSocket();
     } catch (error: any) {

@@ -65,6 +65,7 @@ export const Deck: Card[] = [
       },
       trigger: {
         type: TargetTypes.DAMAGE,
+        targetPlayer: PlayerTargets.OPPONENT,
         expiresOnTrigger: true,
       },
       expiration: {
@@ -392,7 +393,7 @@ export const Deck: Card[] = [
   {
     id: "Quill",
     content: "Convert your next healing spell this turn to a card-draw spell.",
-    cost: 2,
+    cost: 1,
     time: 1,
     ability: {
       effect: {
@@ -606,7 +607,7 @@ export const Deck: Card[] = [
   {
     id: "Alchemy",
     content: "Convert your next mana spell this turn to a card draw spell.",
-    cost: 2,
+    cost: 1,
     time: 1,
     ability: {
       effect: {

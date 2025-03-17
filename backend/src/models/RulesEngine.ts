@@ -604,8 +604,8 @@ class RulesEngine {
                 updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the target of ${targetCard!.id} to ${targetCard!.ability.effect.type}`;
               }
               if (
-                activeCard.ability.effect.spellChange?.value &&
-                targetCard.ability.effect.value &&
+                activeCard.ability.effect.spellChange?.value != null &&
+                targetCard.ability.effect.value != null &&
                 targetCard.ability.effect.value !=
                   activeCard.ability.effect.spellChange.value
               ) {
@@ -716,7 +716,6 @@ class RulesEngine {
                       immediateTargetCard.ability.effect.value =
                         activeCard.ability.effect.spellChange.value;
                       updateEvent.updateLog += `${updateEvent.updateLog ? " AND" : ""} ${activeCard.id} changed the value of ${immediateTargetCard.id} to ${immediateTargetCard.ability.effect.value}`;
-                      console.log("IT HAPPENED");
                     }
                   } else {
                     updateEvent.updateLog += `${activeCard.id} had no valid target`;
@@ -733,6 +732,7 @@ class RulesEngine {
                   } else if (!immediateTargetCard.ability.effect.value) {
                     updateEvent.updateLog = `${activeCard.id} did nothing because ${immediateTargetCard.id} has no value to affect`;
                   } else {
+                    // don't want to write cards that work like this anymore
                     if (!activeCard.ability.effect.value) {
                       immediateTargetCard.ability.effect.value = 0;
                       console.log("SPELL WITH FULL NEGATION OF VALUE");

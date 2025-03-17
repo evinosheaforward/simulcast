@@ -13,8 +13,8 @@ import {
 
 // Mapping for immediate effects: the verb to use for normal vs. prevention cases.
 const immediateVerbs: Record<string, { normal: string; prevention: string }> = {
-  MANA: { normal: "gain", prevention: "lose" },
-  HEALTH: { normal: "gain", prevention: "lose" },
+  MANA: { normal: "gain", prevention: "loses" },
+  HEALTH: { normal: "gain", prevention: "loses" },
   DAMAGE: { normal: "deal", prevention: "reduce damage by" },
   DRAW: { normal: "draw", prevention: "draws" },
   SPELL: { normal: "increase", prevention: "decrease" },
@@ -35,7 +35,6 @@ const typeWords: Record<string, string> = {
   HEALTH: "healing",
   DAMAGE: "damage",
   DRAW: "card draw",
-  SPELL: "next",
   EXPIRATION: "turn",
 };
 
@@ -253,7 +252,10 @@ export function generateContentString(ability: Ability): string {
       ? spellSubtypeWords[effect.subtype].noun
       : "value";
     const whenStr = trigger?.expiresOnTrigger ? "next spell" : "spells";
-    const spellTypeStr = trigger?.type ? ` ${typeWords[trigger.type]}` : "";
+    const spellTypeStr =
+      trigger?.type && typeWords[trigger.type]
+        ? ` ${typeWords[trigger.type]}`
+        : "";
     const durationStr = getTimingString(expiration, trigger, condition);
 
     // Handle condition-based countering (Moon case)
@@ -271,9 +273,8 @@ export function generateContentString(ability: Ability): string {
     }
 
     if (effect.spellChange) {
-      const spellType = trigger?.type ? typeWords[trigger.type] : "spell";
-      const spellPosition =
-        effect.targetPlayer === PlayerTargets.SELF ? "next" : "left-most";
+      const spellType = " " + (trigger?.type ? typeWords[trigger.type] : "");
+      const spellPosition = trigger ? "next" : "left-most";
       const targetChange =
         effect.spellChange.targetPlayer === PlayerTargets.SELF
           ? "themselves"
@@ -289,7 +290,7 @@ export function generateContentString(ability: Ability): string {
           return `change ${targetStr} next ${spellType} spell${durationStr} to target ${targetChange}.`;
         }
         if (effect.spellChange.value !== undefined) {
-          return `change the value of ${targetStr} ${spellPosition} spell to ${effect.spellChange.value}.`;
+          return `change the value of ${targetStr} ${spellPosition}${spellType} spell to ${effect.spellChange.value}.`;
         }
       } else {
         if (effect.spellChange.type) {
@@ -317,7 +318,7 @@ export function generateContentString(ability: Ability): string {
       return `${actionVerb} the ${subtypeNoun} of ${targetStr} ${whenStr}${spellTypeStr} spell by ${effect.value}${durationStr}.`;
     }
 
-    return `${actionVerb} the ${subtypeNoun} of ${targetStr}${spellTypeStr === "next" ? "" : spellTypeStr} ${whenStr} by ${effect.value}${durationStr}.`;
+    return `${actionVerb} the ${subtypeNoun} of ${targetStr}${spellTypeStr || ""} ${whenStr} by ${effect.value}${durationStr}.`;
   }
 
   // Handle triggered effects
