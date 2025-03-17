@@ -57,8 +57,11 @@ export const Deck: Card[] = [
     ability: {
       effect: {
         targetPlayer: PlayerTargets.OPPONENT,
-        type: TargetTypes.DAMAGE,
-        prevention: true,
+        type: TargetTypes.SPELL,
+        subtype: TargetSubTypes.SPELL_CHANGE,
+        spellChange: {
+          value: 0,
+        },
       },
       trigger: {
         type: TargetTypes.DAMAGE,
