@@ -253,6 +253,9 @@ const GameStoreReorderable = types.compose(
       setAbilityQueue(abilityQueue: { card: Card; playerId: string }[]) {
         self.abilityQueue.replace(abilityQueue);
       },
+      clearAbilityQueue() {
+        self.abilityQueue.replace([]);
+      },
     })),
 );
 
@@ -400,6 +403,7 @@ export const GameStore = GameStoreConnectable.actions((self) => ({
       self.isBotGame = isBotGame;
       // Once the game is created, establish the socket connection.
       self.connectSocket();
+      self.clearAbilityQueue();
     } catch (error: any) {
       self.error = error.message;
     }
