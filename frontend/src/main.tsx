@@ -12,6 +12,7 @@ import Login from "./routes/Login";
 import Root from "./routes/Root";
 import DecksListPage from "./routes/DeckList";
 import DeckBuilderPage from "./routes/DeckEditor";
+import PrizeCalculator from "./routes/PrizePage";
 
 const router = createBrowserRouter([
   {
@@ -39,10 +40,14 @@ const router = createBrowserRouter([
     element: <Login />,
     errorElement: <ErrorPage />,
   },
-
   {
     path: "/signup",
     element: <CreateAccount />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/anthony",
+    element: <PrizeCalculator />,
     errorElement: <ErrorPage />,
   },
 ]);
