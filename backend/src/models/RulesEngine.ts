@@ -691,10 +691,10 @@ class RulesEngine {
                   }
                   break;
                 case TargetSubTypes.SPELL_CHANGE:
-                  console.log(
-                    `useAbility: immediate, SPELL, SPELL_CHANGE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
-                  );
                   if (immediateTargetCard) {
+                    console.log(
+                      `useAbility: immediate, SPELL, SPELL_CHANGE - targets: ${JSON.stringify(immediateTargetCard.ability)}`,
+                    );
                     if (activeCard.ability.effect.spellChange?.type) {
                       immediateTargetCard.ability.effect.type =
                         activeCard.ability.effect.spellChange.type;
